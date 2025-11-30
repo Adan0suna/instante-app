@@ -4,10 +4,11 @@
   "description": "Backend para el sistema de grabación y gestión de partidos",
   "main": "src/main.ts",
   "scripts": {
-    "start": "nest start",
+    "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "build": "nest build",
-    "test": "jest"
+    "test": "jest",
+    "start:prod": "node dist/main.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
