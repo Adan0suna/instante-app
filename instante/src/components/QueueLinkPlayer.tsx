@@ -1,0 +1,182 @@
+import React from 'react';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Play, ExternalLink, SkipBack, SkipForward, X, Clock, MapPin, Copy } from 'lucide-react';
+import type { ClipWithDetails } from '../lib/supabase/types';
+
+interface QueueLinkPlayerProps {
+  clips: ClipWithDetails[];
+  currentIndex: number;
+  videoUrl: string;
+  onNext: () => void;
+  onPrevious: () => void;
+  onClose: () => void;
+}
+
+export function QueueLinkPlayer({ 
+  clips, 
+  currentIndex, 
+  videoUrl, 
+  onNext, 
+  onPrevious, 
+  onClose 
+}: QueueLinkPlayerProps) {
+  const currentClip = clips[currentIndex];
+
+  // Extraer el fileId de la URL de Google Drive
+  const getFileId = (url: string) => {
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  };
+
+  const fileId = getFileId(videoUrl);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const openInDrive = () => {
+    if (fileId) {
+      // Intentar abrir con parámetro de tiempo
+      const timeUrl = `https://drive.google.com/file/d/${fileId}/view?t=${Math.floor(currentClip.start_time)}s`;
+      window.open(timeUrl, '_blank');
+    }
+  };
+
+  const openInDriveEmbed = () => {
+    if (fileId) {
+      // Abrir en modo embed
+      const embedUrl = `https://drive.google.com/file/d/${fileId}/preview?t=${Math.floor(currentClip.start_time)}s`;
+      window.open(embedUrl, '_blank');
+    }
+  };
+
+  const copyTimeInfo = () => {
+    const timeInfo = `Tiempo: ${formatTime(currentClip.start_time)} - ${formatTime(currentClip.end_time)} (Duración: ${formatTime(currentClip.end_time - currentClip.start_time)})`;
+    navigator.clipboard.writeText(timeInfo);
+  };
+
+  if (!fileId || !currentClip) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-32">
+          <p className="text-muted-foreground">No hay clips disponibles</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <Play className="h-5 w-5" />
+          Reproduciendo en cola ({currentIndex + 1} de {clips.length})
+        </CardTitle>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onClose}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Información del clip actual */}
+        <div className="bg-muted p-4 rounded-lg">
+          <div className="space-y-3">
+            <h4 className="font-medium">{currentClip.description}</h4>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                <span className="font-medium">Tiempo:</span>
+                <span>{formatTime(currentClip.start_time)} - {formatTime(currentClip.end_time)}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                <span className="font-medium">Duración:</span>
+                <span>{formatTime(currentClip.end_time - currentClip.start_time)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enlaces de acción */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Button
+            variant="default"
+            onClick={openInDrive}
+            className="w-full"
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Abrir en Google Drive
+          </Button>
+          <Button
+            variant="outline"
+            onClick={openInDriveEmbed}
+            className="w-full"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Reproducir en Drive
+          </Button>
+        </div>
+
+        {/* Información adicional */}
+        <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
+          <div className="flex items-start gap-2">
+            <div className="text-blue-600 dark:text-blue-400 mt-0.5">
+              <Clock className="h-4 w-4" />
+            </div>
+            <div className="text-sm">
+              <p className="font-medium text-blue-900 dark:text-blue-100">
+                💡 Cómo ver este clip:
+              </p>
+              <ul className="mt-1 text-blue-800 dark:text-blue-200 space-y-1">
+                <li>• Haz clic en "Abrir en Google Drive"</li>
+                <li>• Navega manualmente al tiempo {formatTime(currentClip.start_time)}</li>
+                <li>• Reproduce hasta {formatTime(currentClip.end_time)}</li>
+                <li>• O usa "Reproducir en Drive" para intentar saltar automáticamente</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Controles de navegación */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onPrevious}
+              disabled={currentIndex === 0}
+            >
+              <SkipBack className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={copyTimeInfo}
+            >
+              <Copy className="h-4 w-4 mr-1" />
+              Copiar tiempo
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onNext}
+              disabled={currentIndex === clips.length - 1}
+            >
+              <SkipForward className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="text-sm text-muted-foreground">
+            {currentIndex + 1} de {clips.length}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+} 
