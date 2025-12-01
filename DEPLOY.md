@@ -36,20 +36,39 @@ git push origin main
 
 ### Paso 4: Configurar variables de entorno
 
-En Railway, ve a Variables y agrega:
+En Railway, ve a Variables y agrega **TODAS** estas variables (son requeridas):
 
 ```
+# Base de datos Supabase (REQUERIDO)
 SUPABASE_HOST=db.tu-proyecto.supabase.co
 SUPABASE_PORT=6543
 SUPABASE_USER=postgres.tu-usuario
 SUPABASE_PASSWORD=tu_contraseña
 SUPABASE_DATABASE=postgres
+
+# Google OAuth (REQUERIDO)
 GOOGLE_CLIENT_ID=tu_google_client_id
 GOOGLE_CLIENT_SECRET=tu_google_client_secret
 GOOGLE_REDIRECT_URI=https://tu-backend.railway.app/google-drive/oauth-callback
+
+# NOTA IMPORTANTE: 
+# NO necesitas configurar GOOGLE_ACCESS_TOKEN ni GOOGLE_REFRESH_TOKEN
+# Estos tokens se obtienen automáticamente cuando el usuario se autentica con Google OAuth
+
+# Frontend URL (REQUERIDO - la pondrás después de deployar frontend)
 FRONTEND_URL=https://tu-frontend.vercel.app
+
+# Puerto (opcional, Railway lo inyecta automáticamente)
 PORT=3001
+
+# Entorno (opcional, pero recomendado)
+NODE_ENV=production
 ```
+
+**⚠️ IMPORTANTE**: 
+- Todas estas variables son **REQUERIDAS** en producción
+- El backend fallará al iniciar si faltan alguna de las variables críticas
+- No uses valores de ejemplo - usa tus credenciales reales
 
 ### Paso 5: Instalar ffmpeg (si es necesario)
 
@@ -176,6 +195,20 @@ npm run preview
 - Considera usar un servicio de almacenamiento externo (S3, Cloudflare R2) para videos grandes
 - Revisa los límites de tamaño de archivo en Railway
 
+### Error: "GOOGLE_REFRESH_TOKEN requerido"
+
+**Este error NO debería aparecer.** El `GOOGLE_REFRESH_TOKEN` NO es una variable de entorno que debas configurar en Railway.
+
+**Explicación:**
+- `GOOGLE_REFRESH_TOKEN` se obtiene **automáticamente** cuando el usuario se autentica con Google OAuth
+- Solo necesitas configurar `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` en Railway
+- El refresh token se guarda temporalmente en memoria cuando el usuario se autentica
+
+**Si ves este error:**
+1. Verifica que `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` estén configurados
+2. NO agregues `GOOGLE_REFRESH_TOKEN` como variable de entorno
+3. El token se obtendrá cuando el usuario use la función de conectar Google Drive desde el frontend
+
 ---
 
 ## 📝 Notas importantes
@@ -190,4 +223,55 @@ npm run preview
 ## 🎉 ¡Listo!
 
 Una vez completados estos pasos, tu aplicación estará en producción y accesible desde cualquier lugar.
+
+---
+
+## 🔄 Flujo de Actualización (Después del Deploy Inicial)
+
+Una vez que Railway y Vercel están conectados a tu repositorio de GitHub, el proceso de actualización es automático:
+
+### Paso 1: Hacer cambios en tu código local
+
+```bash
+# Hacer tus cambios en el código
+# ...
+
+# Subir cambios a GitHub
+git add .
+git commit -m "Descripción de tus cambios"
+git push origin main
+```
+
+### Paso 2: Deploy Automático
+
+**Railway (Backend):**
+- ✅ **Automático**: Railway detecta los cambios en GitHub automáticamente
+- ✅ **Redeploy automático**: Se inicia un nuevo deploy en unos segundos
+- ✅ **No necesitas hacer nada**: Solo espera 2-5 minutos
+
+**Vercel (Frontend):**
+- ✅ **Automático**: Vercel detecta los cambios en GitHub automáticamente
+- ✅ **Redeploy automático**: Se inicia un nuevo build y deploy
+- ✅ **No necesitas hacer nada**: Solo espera 1-3 minutos
+
+### Verificar el Deploy
+
+1. **Railway**: Ve a tu proyecto en Railway → Deployments → Verás el nuevo deploy en progreso
+2. **Vercel**: Ve a tu proyecto en Vercel → Deployments → Verás el nuevo deploy en progreso
+
+### Notas Importantes
+
+- ⚠️ **Variables de entorno**: Si cambias variables de entorno, necesitas actualizarlas manualmente en Railway/Vercel
+- ⚠️ **Primera vez**: Asegúrate de que Railway y Vercel estén conectados a tu repositorio de GitHub
+- ⚠️ **Rama principal**: Los deploys automáticos solo funcionan en la rama `main` (o la que configuraste)
+
+### Desactivar Deploy Automático (Opcional)
+
+Si prefieres hacer deploys manuales:
+
+**Railway:**
+- Settings → Source → Desactivar "Auto Deploy"
+
+**Vercel:**
+- Settings → Git → Desactivar "Automatic deployments from Git"
 

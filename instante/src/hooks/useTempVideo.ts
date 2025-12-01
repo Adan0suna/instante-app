@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getBackendUrl } from '../lib/config';
 
 interface TempVideo {
   tempVideoId: string;
@@ -43,7 +44,7 @@ export function useTempVideo(): UseTempVideoReturn {
       formData.append('matchId', matchId.toString());
       formData.append('title', title);
 
-      const response = await fetch('http://localhost:3001/recordings/temp-video', {
+      const response = await fetch(getBackendUrl('/recordings/temp-video'), {
         method: 'POST',
         body: formData,
       });
@@ -77,7 +78,7 @@ export function useTempVideo(): UseTempVideoReturn {
   };
 
   const getTempVideoUrl = (tempVideoId: string): string => {
-    return `http://localhost:3001/recordings/temp-video/${tempVideoId}`;
+    return getBackendUrl(`/recordings/temp-video/${tempVideoId}`);
   };
 
   const deleteTempVideo = async (tempVideoId: string): Promise<void> => {
@@ -87,7 +88,7 @@ export function useTempVideo(): UseTempVideoReturn {
     try {
       console.log('🗑️ Eliminando video temporal:', tempVideoId);
 
-      const response = await fetch(`http://localhost:3001/recordings/temp-video/${tempVideoId}`, {
+      const response = await fetch(getBackendUrl(`/recordings/temp-video/${tempVideoId}`), {
         method: 'DELETE',
       });
 

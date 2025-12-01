@@ -3,6 +3,7 @@ import { Match, MatchVideo, Clip, UserAlias, ClipCategory, MatchWithDetails, Cli
 import { getMatches, getMatchesWithDetails, createMatch, addClip, getMatch, getUserAliases, getClipCategories, addVideo, deleteMatch } from '../lib/supabase/matches'
 import { useStorage } from './useStorage'
 import type { StorageProviderType } from '../lib/storage/types'
+import { getBackendUrl } from '../lib/config'
 
 export function useMatch() {
   const [loading, setLoading] = useState(false)
@@ -180,7 +181,7 @@ export function useMatch() {
       }
 
       // Subir archivo al backend
-      const response = await fetch('http://localhost:3001/recordings/upload', {
+      const response = await fetch(getBackendUrl('/recordings/upload'), {
         method: 'POST',
         body: formData,
       })

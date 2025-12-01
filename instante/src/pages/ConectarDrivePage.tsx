@@ -5,8 +5,7 @@ import { LogIn, Cloud } from "lucide-react"
 import { SidebarNav } from "../components/SidebarNav"
 import { StorageProviderSelector } from "../components/StorageProviderSelector"
 import { useStorage } from "../hooks/useStorage"
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"
+import { BACKEND_URL } from "../lib/config"
 
 export default function ConectarDrivePage() {
   const { provider, hasCredentials, getCurrentCredentials } = useStorage()

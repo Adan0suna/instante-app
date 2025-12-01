@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { getBackendUrl } from '../lib/config';
 
 // Utilidad para leer parámetros de la URL
 function useQuery() {
@@ -98,9 +99,8 @@ const GrabarPage: React.FC = () => {
       const formData = new FormData();
       formData.append('video', file);
       if (matchId) formData.append('matchId', matchId);
-      // Cambia la URL por la de tu backend
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
-      const uploadUrl = `${backendUrl}/recordings/upload-recording`;
+      // Usar la configuración centralizada del backend
+      const uploadUrl = getBackendUrl('/recordings/upload-recording');
       const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData

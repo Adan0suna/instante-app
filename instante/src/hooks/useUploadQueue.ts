@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useConnectionStatus } from './useConnectionStatus';
+import { getBackendUrl } from '../lib/config';
 
 export interface PendingUpload {
   id: string;
@@ -218,7 +219,7 @@ export function useUploadQueue(config: UploadQueueConfig = {
       if (upload.matchTitle) formData.append('title', upload.matchTitle);
 
       // Subir archivo al backend
-      const response = await fetch('http://localhost:3001/recordings/upload', {
+      const response = await fetch(getBackendUrl('/recordings/upload'), {
         method: 'POST',
         body: formData,
       });

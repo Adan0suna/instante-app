@@ -146,16 +146,30 @@ export class GoogleDriveController {
 
   @Get('status')
   getStatus() {
+    // Los tokens de acceso y refresh NO son variables de entorno
+    // Se obtienen dinámicamente cuando el usuario se autentica
     const hasAccessToken = !!process.env.GOOGLE_ACCESS_TOKEN;
     const hasRefreshToken = !!process.env.GOOGLE_REFRESH_TOKEN;
     
+    // Verificar que las credenciales OAuth estén configuradas
+    const hasClientId = !!process.env.GOOGLE_CLIENT_ID;
+    const hasClientSecret = !!process.env.GOOGLE_CLIENT_SECRET;
+    
     return {
+      // Configuración OAuth (requerida)
+      hasClientId,
+      hasClientSecret,
+      // Tokens de usuario (opcionales, se obtienen al autenticarse)
       hasAccessToken,
       hasRefreshToken,
-      isConfigured: hasAccessToken && hasRefreshToken,
-      message: hasAccessToken && hasRefreshToken 
-        ? 'Google Drive API configurado correctamente' 
-        : 'Google Drive API no configurado'
+      // Estado general
+      isConfigured: hasClientId && hasClientSecret,
+      isAuthenticated: hasAccessToken && hasRefreshToken,
+      message: hasClientId && hasClientSecret
+        ? (hasAccessToken && hasRefreshToken 
+          ? 'Google Drive API configurado y autenticado' 
+          : 'Google Drive API configurado. El usuario necesita autenticarse.')
+        : 'Google Drive API no configurado. Configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.'
     };
   }
 } 

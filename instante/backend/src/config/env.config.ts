@@ -2,21 +2,51 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// Función para obtener variable de entorno requerida
+function getRequiredEnv(key: string, defaultValue?: string): string {
+  const value = process.env[key] || defaultValue;
+  
+  if (!value && !isDevelopment) {
+    throw new Error(
+      `❌ Variable de entorno requerida faltante: ${key}\n` +
+      `   Por favor, configura esta variable en tu plataforma de deploy (Railway, etc.)`
+    );
+  }
+  
+  if (!value) {
+    console.warn(`⚠️  Advertencia: Variable de entorno ${key} no configurada. Usando valor por defecto para desarrollo.`);
+  }
+  
+  return value || '';
+}
+
+// Función para obtener variable de entorno opcional
+function getOptionalEnv(key: string, defaultValue: string): string {
+  return process.env[key] || defaultValue;
+}
+
 export const envConfig = {
-  // Supabase
+  // Supabase - TODAS REQUERIDAS en producción
   supabase: {
-    host: process.env.SUPABASE_HOST || 'aws-0-us-east-1.pooler.supabase.com',
-    port: parseInt(process.env.SUPABASE_PORT) || 6543,
-    user: process.env.SUPABASE_USER || 'postgres.uothcctfocnbjxyopxrg',
-    password: process.env.SUPABASE_PASSWORD || 'O2d5rcj9sMZte253',
-    database: process.env.SUPABASE_DATABASE || 'postgres',
+    host: getRequiredEnv('SUPABASE_HOST', isDevelopment ? 'localhost' : undefined),
+    port: parseInt(getRequiredEnv('SUPABASE_PORT', isDevelopment ? '5432' : undefined) || '5432'),
+    user: getRequiredEnv('SUPABASE_USER', isDevelopment ? 'postgres' : undefined),
+    password: getRequiredEnv('SUPABASE_PASSWORD', isDevelopment ? 'postgres' : undefined),
+    database: getRequiredEnv('SUPABASE_DATABASE', isDevelopment ? 'postgres' : undefined),
   },
   
-  // Google Drive
+  // Google Drive - TODAS REQUERIDAS en producción
   google: {
-    clientId: process.env.GOOGLE_CLIENT_ID || '1092005345522-9dn5pk996s8kvp2f0mrv1cf6r6kigfnl.apps.googleusercontent.com',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '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',
-    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/google-drive/oauth-callback',
+    clientId: getRequiredEnv('GOOGLE_CLIENT_ID', undefined),
+    clientSecret: getRequiredEnv('GOOGLE_CLIENT_SECRET', undefined),
+    redirectUri: getOptionalEnv(
+      'GOOGLE_REDIRECT_URI',
+      isDevelopment 
+        ? 'http://localhost:3001/google-drive/oauth-callback'
+        : ''
+    ),
   },
   
   // MEGA (nota: las credenciales deben venir del frontend cuando el usuario se autentica)
@@ -25,8 +55,8 @@ export const envConfig = {
     // Solo las incluimos por si acaso se necesita una cuenta por defecto
   },
   
-  // Server
+  // Server - PORT es opcional, Railway/Vercel lo inyectan automáticamente
   server: {
-    port: parseInt(process.env.PORT) || 3001,
+    port: parseInt(getOptionalEnv('PORT', '3001')),
   },
 }; 

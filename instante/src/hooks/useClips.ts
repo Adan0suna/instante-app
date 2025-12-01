@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { addClip } from '../lib/supabase/matches';
+import { getBackendUrl } from '../lib/config';
 
 interface Clip {
   clipId: string;
@@ -62,7 +63,7 @@ export function useClips(): UseClipsReturn {
       console.log('✅ Clip creado en la base de datos:', createdClip);
 
       // Ahora procesar el clip con FFmpeg
-      const response = await fetch('http://localhost:3001/recortes/process-clip', {
+      const response = await fetch(getBackendUrl('/recortes/process-clip'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +118,7 @@ export function useClips(): UseClipsReturn {
       console.log('📋 Obteniendo clips para partido:', matchId);
 
       // Usar el nuevo endpoint que obtiene clips desde la base de datos
-      const response = await fetch(`http://localhost:3001/recortes/db/${matchId}`);
+      const response = await fetch(getBackendUrl(`/recortes/db/${matchId}`));
       
       if (!response.ok) {
         throw new Error('Error obteniendo clips');

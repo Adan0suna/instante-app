@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getBackendUrl } from '../lib/config';
 
 interface AutoTempVideo {
   tempVideoId: string;
@@ -38,7 +39,7 @@ export function useAutoTempVideo(): UseAutoTempVideoReturn {
   };
 
   const getTempVideoUrl = (tempVideoId: string): string => {
-    return `http://localhost:3001/recordings/temp-video/${tempVideoId}`;
+    return getBackendUrl(`/recordings/temp-video/${tempVideoId}`);
   };
 
   const clearTempVideo = (matchId: number) => {
