@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
+import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as path from 'path';
 import { StorageProvider, StorageUploadOptions, StorageUploadResult } from './storage.interface';
@@ -7,17 +8,53 @@ import { StorageProvider, StorageUploadOptions, StorageUploadResult } from './st
 @Injectable()
 export class GoogleDriveProvider implements StorageProvider {
     /**
-     * Sube un archivo a Google Drive SIN compresión
-     * (FFmpeg deshabilitado temporalmente hasta que esté correctamente instalado en Railway)
+     * Comprime y sube un archivo a Google Drive
+     * Si FFmpeg falla, sube el video original sin comprimir
      */
     async compressAndUpload(
         localPath: string,
         credentials: { access_token: string; refresh_token: string },
         options?: StorageUploadOptions
     ): Promise<StorageUploadResult> {
-        console.log('📤 Subiendo video a Google Drive (sin compresión - FFmpeg deshabilitado)...');
+        let videoPath = localPath;
+        let mimeType = 'video/webm';
+        let shouldCleanup = false;
 
-        // Subir directamente sin comprimir
+        // Intentar comprimir con FFmpeg
+        try {
+            console.log('🎬 Intentando comprimir video con FFmpeg...');
+
+            const compressedPath = path.join(
+                path.dirname(localPath),
+                path.basename(localPath, path.extname(localPath)) + '_compressed.mp4'
+            );
+
+            await new Promise<void>((resolve, reject) => {
+                ffmpeg(localPath)
+                    .output(compressedPath)
+                    .videoCodec('libx264')
+                    .audioCodec('aac')
+                    .outputOptions('-preset', 'ultrafast')
+                    .videoBitrate(options?.bitrate || '1000k')
+                    .size(options?.resolution || '1280x720')
+                    .on('end', () => resolve())
+                    .on('error', (err) => reject(err))
+                    .run();
+            });
+
+            console.log('✅ Video comprimido exitosamente');
+            videoPath = compressedPath;
+            mimeType = 'video/mp4';
+            shouldCleanup = true;
+        } catch (ffmpegError) {
+            console.warn('⚠️ FFmpeg falló, subiendo video original sin comprimir');
+            console.warn('Error:', ffmpegError.message);
+            // Continuar con el video original
+        }
+
+        // Subir a Google Drive
+        console.log('📤 Subiendo video a Google Drive...');
+
         const oauth2Client = new google.auth.OAuth2();
         oauth2Client.setCredentials({
             access_token: credentials.access_token,
@@ -27,8 +64,8 @@ export class GoogleDriveProvider implements StorageProvider {
         const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
         const fileName = options?.title
-            ? `${options.title}_${new Date().toISOString().split('T')[0]}.webm`
-            : path.basename(localPath);
+            ? `${options.title}_${new Date().toISOString().split('T')[0]}.${mimeType === 'video/mp4' ? 'mp4' : 'webm'}`
+            : path.basename(videoPath);
 
         const fileMetadata = {
             name: fileName,
@@ -36,8 +73,8 @@ export class GoogleDriveProvider implements StorageProvider {
         };
 
         const media = {
-            mimeType: 'video/webm',
-            body: fs.createReadStream(localPath),
+            mimeType: mimeType,
+            body: fs.createReadStream(videoPath),
         };
 
         console.log('📤 Subiendo a Google Drive:', fileMetadata);
@@ -55,7 +92,10 @@ export class GoogleDriveProvider implements StorageProvider {
 
             const fileId = response.data.id;
 
-            // Limpiar archivo temporal
+            // Limpiar archivos temporales
+            if (shouldCleanup && fs.existsSync(videoPath)) {
+                fs.unlinkSync(videoPath);
+            }
             if (fs.existsSync(localPath)) {
                 fs.unlinkSync(localPath);
             }
@@ -77,7 +117,10 @@ export class GoogleDriveProvider implements StorageProvider {
                 provider: 'google-drive',
             };
         } catch (err) {
-            // Limpiar archivo en caso de error
+            // Limpiar archivos en caso de error
+            if (shouldCleanup && fs.existsSync(videoPath)) {
+                fs.unlinkSync(videoPath);
+            }
             if (fs.existsSync(localPath)) {
                 fs.unlinkSync(localPath);
             }
