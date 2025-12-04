@@ -12,13 +12,13 @@ export class GoogleDriveController {
       'https://www.googleapis.com/auth/userinfo.profile',
       'https://www.googleapis.com/auth/userinfo.email',
     ];
-    
+
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',
       scope: scopes,
     });
-    
+
     return { authUrl };
   }
 
@@ -26,16 +26,16 @@ export class GoogleDriveController {
   async handleOAuthCallback(@Res() res: Response) {
     try {
       const { code } = res.req.query;
-      
+
       if (!code) {
-        return res.status(HttpStatus.BAD_REQUEST).json({ 
-          error: 'Código de autorización no proporcionado' 
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          error: 'Código de autorización no proporcionado'
         });
       }
 
       // Intercambiar el código por tokens
       const { tokens } = await oauth2Client.getToken(code as string);
-      
+
       console.log('🔑 Tokens obtenidos:', {
         access_token: tokens.access_token ? '✅ Presente' : '❌ Ausente',
         refresh_token: tokens.refresh_token ? '✅ Presente' : '❌ Ausente',
@@ -50,14 +50,14 @@ export class GoogleDriveController {
       oauth2Client.setCredentials(tokens);
 
       // Redirigir al frontend con los tokens en la URL
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://instante-app-23g2.vercel.app';
       const redirectUrl = `${frontendUrl}/conectar-drive?access_token=${tokens.access_token}&refresh_token=${tokens.refresh_token}&expires_in=${tokens.expiry_date}&token_type=Bearer`;
 
       return res.redirect(redirectUrl);
 
     } catch (error) {
       console.error('❌ Error en OAuth callback:', error);
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://instante-app-23g2.vercel.app';
       const errorUrl = `${frontendUrl}/conectar-drive?error=authentication_failed`;
       return res.redirect(errorUrl);
     }
@@ -67,7 +67,7 @@ export class GoogleDriveController {
   setTokens(@Body() body: { access_token: string; refresh_token: string }) {
     try {
       const { access_token, refresh_token } = body;
-      
+
       // Guardar tokens en variables de entorno
       process.env.GOOGLE_ACCESS_TOKEN = access_token;
       process.env.GOOGLE_REFRESH_TOKEN = refresh_token;
@@ -94,7 +94,7 @@ export class GoogleDriveController {
   setTokensFromFrontend(@Body() body: { tokens: any }) {
     try {
       const { tokens } = body;
-      
+
       if (!tokens || !tokens.access_token) {
         throw new Error('Tokens no proporcionados');
       }
@@ -122,7 +122,7 @@ export class GoogleDriveController {
   async testConnection() {
     try {
       const drive = google.drive({ version: 'v3', auth: oauth2Client });
-      
+
       // Intentar listar archivos para verificar la conexión
       const response = await drive.files.list({
         pageSize: 1,
@@ -150,11 +150,11 @@ export class GoogleDriveController {
     // Se obtienen dinámicamente cuando el usuario se autentica
     const hasAccessToken = !!process.env.GOOGLE_ACCESS_TOKEN;
     const hasRefreshToken = !!process.env.GOOGLE_REFRESH_TOKEN;
-    
+
     // Verificar que las credenciales OAuth estén configuradas
     const hasClientId = !!process.env.GOOGLE_CLIENT_ID;
     const hasClientSecret = !!process.env.GOOGLE_CLIENT_SECRET;
-    
+
     return {
       // Configuración OAuth (requerida)
       hasClientId,
@@ -166,11 +166,11 @@ export class GoogleDriveController {
       isConfigured: hasClientId && hasClientSecret,
       isAuthenticated: hasAccessToken && hasRefreshToken,
       message: hasClientId && hasClientSecret
-        ? (hasAccessToken && hasRefreshToken 
-          ? 'Google Drive API configurado y autenticado' 
+        ? (hasAccessToken && hasRefreshToken
+          ? 'Google Drive API configurado y autenticado'
           : 'Google Drive API configurado. El usuario necesita autenticarse.')
         : 'Google Drive API no configurado. Configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.'
     };
   }
-} 
+}
 
