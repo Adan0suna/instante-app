@@ -15,7 +15,7 @@ export class GoogleDriveProvider implements StorageProvider {
     credentials: { access_token: string; refresh_token: string },
     options?: StorageUploadOptions
   ): Promise<StorageUploadResult> {
-    // Intentar comprimir el video con FFmpeg
+    // Intentar comprimir el video con FFmpeg (con fallback a subida directa)
     let videoPath = localPath;
     let mimeType = 'video/webm';
     let shouldCleanup = false;
