@@ -17,22 +17,22 @@ import { MegaProvider } from './providers/storage/mega.provider';
 
 @Module({
   imports: [
-    // Comentado temporalmente para evitar errores de conexión a DB
-    // TypeOrmModule.forRoot({
-    //   ...databaseConfig,
-    //   retryAttempts: 1,
-    //   retryDelay: 1000,
-    // }),
-    // TypeOrmModule.forFeature([Recording, Highlight, Clip]),
+    // Conexión a base de datos Supabase
+    TypeOrmModule.forRoot({
+      ...databaseConfig,
+      retryAttempts: 3,
+      retryDelay: 3000,
+    }),
+    TypeOrmModule.forFeature([Recording, Highlight, Clip]),
   ],
-  controllers: [GoogleDriveController, RecortesController, WhatsAppController], // RecordingController comentado temporalmente
-  // Comentado temporalmente porque depende de DB
-  // providers: [RecordingService, RecortesService],
+  controllers: [RecordingController, GoogleDriveController, RecortesController, WhatsAppController],
   providers: [
+    RecordingService,
+    RecortesService,
     // Proveedores de almacenamiento
     GoogleDriveProvider,
     MegaProvider,
     StorageService,
   ],
 })
-export class AppModule {} 
+export class AppModule { } 
