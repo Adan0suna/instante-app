@@ -1,5 +1,0 @@
-# Nixpacks configuration for Railway
-# This tells Railway to install ffmpeg when deploying
-
-[phases.setup]
-nixPkgs = ["ffmpeg"]
