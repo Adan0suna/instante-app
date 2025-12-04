@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Play, Download, ExternalLink, AlertTriangle, Pause, Volume2, VolumeX } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { isBackendUrl } from '../lib/config';
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -21,12 +22,12 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Detectar si es una URL temporal local
-  const isTempVideo = videoUrl.includes('localhost:3001') || videoUrl.includes('temp-video');
-  
+  const isTempVideo = isBackendUrl(videoUrl);
+
   // Debug logging
   console.log('[VideoPlayer] URL recibida:', videoUrl);
   console.log('[VideoPlayer] Es video temporal:', isTempVideo);
-  
+
   // Extraer el fileId de la URL de Google Drive (solo si no es temporal)
   const getFileId = (url: string) => {
     if (isTempVideo) return null;
@@ -50,7 +51,7 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
     setError(null);
     setIsLoading(true);
     onStatusChange?.('loading');
-    
+
     if (isTempVideo) {
       // Para videos temporales, simular carga completada
       const timer = setTimeout(() => {
@@ -135,7 +136,7 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
               </div>
             </div>
           )}
-          
+
           {error && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
               <div className="text-center text-white">
@@ -177,7 +178,7 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
               setIsPlaying(false);
             }}
           />
-          
+
           {/* Botón de pantalla completa */}
           <div className="absolute top-2 right-2">
             <Button
@@ -192,7 +193,7 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
               <ExternalLink className="h-4 w-4" />
             </Button>
           </div>
-          
+
           {title && (
             <div className="absolute top-2 left-2 bg-black/70 text-white px-3 py-1 rounded-md text-xs">
               {title}
@@ -250,7 +251,7 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
           src={urls?.thumbnail}
           alt={title || 'Vista previa del video'}
           className="w-full h-full object-cover"
-          onError={e => { 
+          onError={e => {
             e.currentTarget.style.display = 'none';
             e.currentTarget.nextElementSibling?.classList.remove('hidden');
           }}
@@ -263,7 +264,7 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
             <p className="text-gray-400 text-sm mt-2">Clic para reproducir</p>
           </div>
         </div>
-        
+
         {/* Overlay con botón de reproducción siempre visible */}
         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
           <Button
@@ -274,7 +275,7 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
             Reproducir Video
           </Button>
         </div>
-        
+
         {/* Controles flotantes */}
         <div className="absolute bottom-2 right-2 flex gap-2">
           <Button
@@ -296,7 +297,7 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
             <Download className="h-4 w-4" />
           </Button>
         </div>
-        
+
         {/* Información del video */}
         {title && (
           <div className="absolute top-2 left-2 bg-black/70 text-white px-3 py-1 rounded-md text-sm">
@@ -361,8 +362,8 @@ export function VideoPlayer({ videoUrl, title, className = '', onStatusChange, o
                     ¿Por qué no se reproduce directamente aquí?
                   </p>
                   <p className="text-yellow-800 dark:text-yellow-200">
-                    Google Drive implementa políticas de seguridad (CSP) que impiden que los videos se muestren 
-                    directamente en iframes desde otros dominios. Por eso te ofrecemos opciones para abrir el video 
+                    Google Drive implementa políticas de seguridad (CSP) que impiden que los videos se muestren
+                    directamente en iframes desde otros dominios. Por eso te ofrecemos opciones para abrir el video
                     en una nueva pestaña o descargarlo.
                   </p>
                 </div>

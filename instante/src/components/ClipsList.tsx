@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Play, Scissors, Clock, FileVideo, Trash2, Eye, Wand2 } from 'lucide-react';
 import { VideoEditor } from './VideoEditor';
+import { getBackendUrl, isBackendUrl } from '../lib/config';
 
 interface Clip {
   id?: number;
@@ -38,7 +39,7 @@ export function ClipsList({ clips, onPlayClip, onDeleteClip, onViewClip, onEditC
 
   const parseInterval = (interval: string): number => {
     if (typeof interval === 'number') return interval;
-    
+
     // Parse PostgreSQL interval format (e.g., "00:00:30")
     const parts = interval.split(':');
     if (parts.length === 3) {
@@ -52,7 +53,7 @@ export function ClipsList({ clips, onPlayClip, onDeleteClip, onViewClip, onEditC
 
   const getClipThumbnailUrl = (videoUrl: string, startTime: number) => {
     // Para clips locales, usar la URL del servidor
-    if (videoUrl.includes('localhost:3001')) {
+    if (isBackendUrl(videoUrl)) {
       return videoUrl;
     }
     // Para videos de Drive, usar la URL de preview
@@ -93,7 +94,7 @@ export function ClipsList({ clips, onPlayClip, onDeleteClip, onViewClip, onEditC
             const startTime = parseInterval(clip.start_time);
             const endTime = parseInterval(clip.end_time);
             const duration = endTime - startTime;
-            
+
             return (
               <Card key={clip.id || clip.clipId || index} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
@@ -107,7 +108,7 @@ export function ClipsList({ clips, onPlayClip, onDeleteClip, onViewClip, onEditC
                           </span>
                         )}
                       </div>
-                      
+
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
@@ -124,14 +125,14 @@ export function ClipsList({ clips, onPlayClip, onDeleteClip, onViewClip, onEditC
                           </div>
                         )}
                       </div>
-                      
+
                       {clip.created_at && (
                         <p className="text-xs text-muted-foreground mt-1">
                           Creado: {new Date(clip.created_at).toLocaleString()}
                         </p>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       {onEditClip && clip.clipId && (
                         <Button
@@ -147,7 +148,7 @@ export function ClipsList({ clips, onPlayClip, onDeleteClip, onViewClip, onEditC
                           <Wand2 className="h-4 w-4" />
                         </Button>
                       )}
-                      
+
                       {onViewClip && (
                         <Button
                           size="sm"
@@ -157,7 +158,7 @@ export function ClipsList({ clips, onPlayClip, onDeleteClip, onViewClip, onEditC
                           <Eye className="h-4 w-4" />
                         </Button>
                       )}
-                      
+
                       {onPlayClip && (
                         <Button
                           size="sm"
@@ -167,7 +168,7 @@ export function ClipsList({ clips, onPlayClip, onDeleteClip, onViewClip, onEditC
                           <Play className="h-4 w-4" />
                         </Button>
                       )}
-                      
+
                       {onDeleteClip && clip.clipId && (
                         <Button
                           size="sm"
@@ -186,12 +187,12 @@ export function ClipsList({ clips, onPlayClip, onDeleteClip, onViewClip, onEditC
           })}
         </div>
       </CardContent>
-      
+
       {/* Editor de video */}
       {showEditor && selectedClip && selectedClip.clipId && (
         <div className="mt-4">
           <VideoEditor
-            videoUrl={`http://localhost:3001/recortes/file/${selectedClip.clipId}`}
+            videoUrl={getBackendUrl(`/recortes/file/${selectedClip.clipId}`)}
             clipId={selectedClip.clipId}
             onSave={(editedVideoUrl) => {
               console.log('Video editado guardado:', editedVideoUrl);

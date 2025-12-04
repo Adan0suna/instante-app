@@ -8,8 +8,8 @@ async function bootstrap() {
   
   // Configurar CORS - Permitir frontend local y de Vercel
   const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:5173', // Vite dev server
+    'https://instante-app-23g2.vercel.app',
+    'https://instante-app-23g2.vercel.app', // Vite dev server
     process.env.FRONTEND_URL, // URL de producción en Vercel
   ].filter(Boolean); // Elimina valores undefined
 

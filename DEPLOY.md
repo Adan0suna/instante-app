@@ -80,8 +80,31 @@ Railway detecta automáticamente Node.js, pero para ffmpeg necesitas:
 
 ### Paso 6: Obtener la URL del backend
 
-1. Railway generará automáticamente una URL como: `https://tu-backend.railway.app`
-2. **Copia esta URL** - la necesitarás para el frontend
+**Cómo encontrar la URL de tu backend en Railway:**
+
+1. **Opción 1 - En el Dashboard del Proyecto:**
+   - Ve a tu proyecto en Railway
+   - Abre el servicio del backend (ej: "instante-backend")
+   - En la parte superior verás una sección "Networking" o "Domains"
+   - La URL aparecerá como: `https://tu-backend-production.up.railway.app`
+   - **Copia esta URL completa** (incluyendo el `https://`)
+
+2. **Opción 2 - En Settings:**
+   - Abre tu servicio → Clic en "Settings"
+   - Ve a la pestaña "Networking" o "Domains"
+   - Ahí verás la URL pública del servicio
+
+3. **Si no aparece ninguna URL:**
+   - Ve a Settings → Networking
+   - Activa "Public Networking" o "Generate Domain"
+   - Railway creará una URL automáticamente
+
+**Formato de la URL:**
+- Ejemplo: `https://instante-backend-production.up.railway.app`
+- O: `https://instante-backend.railway.app`
+- **IMPORTANTE**: Copia la URL completa con `https://`
+
+**Esta URL la usarás en Vercel como valor de `VITE_BACKEND_URL`**
 
 ---
 

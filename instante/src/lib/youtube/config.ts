@@ -16,7 +16,7 @@ export const YOUTUBE_CONFIG = {
   ].join(' '),
   
   // Redirect URI (debe coincidir con Google Cloud Console)
-  REDIRECT_URI: import.meta.env.VITE_YOUTUBE_REDIRECT_URI || 'http://localhost:3000/youtube/callback'
+  REDIRECT_URI: import.meta.env.VITE_YOUTUBE_REDIRECT_URI || 'https://instante-app-23g2.vercel.app/youtube/callback'
 }
 
 export const YOUTUBE_API_ENDPOINTS = {

@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Play, Pause, X, Clock, MapPin, Copy, Maximize2, ExternalLink, Download } from 'lucide-react';
 import type { ClipWithDetails } from '../lib/supabase/types';
+import { getBackendUrl } from '../lib/config';
 
 interface ClipVideoPlayerProps {
   clip: ClipWithDetails;
@@ -57,7 +58,7 @@ export function ClipVideoPlayer({ clip, onClose }: ClipVideoPlayerProps) {
   const getClipVideoUrl = () => {
     // Si el clip_url es una ruta relativa del backend, construir la URL completa
     if (clip.clip_url && clip.clip_url.startsWith('/recortes/file/')) {
-      return `http://localhost:3001${clip.clip_url}`;
+      return getBackendUrl(clip.clip_url);
     }
     // Si es una URL completa, usarla tal como está
     return clip.clip_url || '';
@@ -168,7 +169,7 @@ export function ClipVideoPlayer({ clip, onClose }: ClipVideoPlayerProps) {
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
-              
+
               {/* Controles personalizados */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -180,15 +181,15 @@ export function ClipVideoPlayer({ clip, onClose }: ClipVideoPlayerProps) {
                   >
                     {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
-                  
+
                   <div className="flex-1 text-white text-sm">
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </div>
                 </div>
-                
+
                 {/* Barra de progreso */}
                 <div className="relative h-2 bg-white/20 rounded-full">
-                  <div 
+                  <div
                     className="absolute h-full bg-blue-500 rounded-full"
                     style={{ width: `${(currentTime / duration) * 100}%` }}
                   />

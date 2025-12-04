@@ -8,6 +8,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
 import { Play, Pause, Wand2, FileText, Music, Settings, X, Upload, Eye, Check } from 'lucide-react';
+import { getBackendUrl } from '../lib/config';
 
 interface VideoEditorProps {
   videoUrl: string;
@@ -53,7 +54,7 @@ export function VideoEditor({ videoUrl, clipId, onSave, onCancel }: VideoEditorP
   const [isProcessing, setIsProcessing] = useState(false);
   const [editedVideoUrl, setEditedVideoUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  
+
   const [settings, setSettings] = useState<EditorSettings>({
     playbackSpeed: 1,
     colorFilter: 'none',
@@ -122,7 +123,7 @@ export function VideoEditor({ videoUrl, clipId, onSave, onCancel }: VideoEditorP
 
   const processVideo = async () => {
     setIsProcessing(true);
-    
+
     try {
       const formData = new FormData();
       formData.append('clipId', clipId);
@@ -156,7 +157,7 @@ export function VideoEditor({ videoUrl, clipId, onSave, onCancel }: VideoEditorP
         }
       }
 
-      const response = await fetch('http://localhost:3001/recortes/process-edited', {
+      const response = await fetch(getBackendUrl('/recortes/process-edited'), {
         method: 'POST',
         body: formData
       });
@@ -166,12 +167,12 @@ export function VideoEditor({ videoUrl, clipId, onSave, onCancel }: VideoEditorP
       }
 
       const result = await response.json();
-      const fullUrl = result.editedVideoUrl.startsWith('http') 
-        ? result.editedVideoUrl 
-        : `http://localhost:3001${result.editedVideoUrl}`;
+      const fullUrl = result.editedVideoUrl.startsWith('http')
+        ? result.editedVideoUrl
+        : getBackendUrl(result.editedVideoUrl);
       setEditedVideoUrl(fullUrl);
       onSave(result.editedVideoUrl);
-      
+
     } catch (error) {
       console.error('Error procesando video:', error);
       alert('Error procesando el video: ' + (error instanceof Error ? error.message : 'Error desconocido'));
@@ -554,8 +555,8 @@ export function VideoEditor({ videoUrl, clipId, onSave, onCancel }: VideoEditorP
                 Cancelar
               </Button>
               {editedVideoUrl && (
-                <Button 
-                  variant="default" 
+                <Button
+                  variant="default"
                   onClick={() => window.open(editedVideoUrl, '_blank')}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
@@ -590,7 +591,7 @@ export function VideoEditor({ videoUrl, clipId, onSave, onCancel }: VideoEditorP
                 onPlay={() => setIsPreviewPlaying(true)}
                 onPause={() => setIsPreviewPlaying(false)}
               />
-              
+
               {/* Texto overlay en preview */}
               {settings.textOverlay.enabled && (
                 <div

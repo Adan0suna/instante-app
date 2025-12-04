@@ -49,7 +49,7 @@ export function ClipQueuePlayer({ clips, onClose }: ClipQueuePlayerProps) {
     
     // El servidor devuelve clipPath como ruta absoluta del servidor, no como URL
     // Por eso usamos clipId directamente para construir la URL del endpoint
-    const videoUrl = `http://localhost:3001/recortes/file/${clip.clipId}`;
+    const videoUrl = `https://instante-app-23g2.vercel.app/recortes/file/${clip.clipId}`;
     console.log('🎬 getVideoUrl - URL generada:', videoUrl);
     return videoUrl;
   };
@@ -131,7 +131,7 @@ export function ClipQueuePlayer({ clips, onClose }: ClipQueuePlayerProps) {
       
       console.log('🎬 Iniciando concatenación de clips para matchId:', matchId);
       
-      const response = await fetch(`http://localhost:3001/recortes/concatenate/${matchId}`, {
+      const response = await fetch(`https://instante-app-production.up.railway.app/recortes/concatenate/${matchId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -147,9 +147,9 @@ export function ClipQueuePlayer({ clips, onClose }: ClipQueuePlayerProps) {
       
       setConcatenatedVideo({
         videoId: result.videoId,
-        videoUrl: `http://localhost:3001${result.videoUrl}`,
+        videoUrl: `https://instante-app-production.up.railway.app${result.videoUrl}`,
         fileSize: result.fileSize,
-        clipsCount: result.clipsCount
+        clipsCount: result.clipsCounts
       });
       
       setShowConcatenatedVideo(true);

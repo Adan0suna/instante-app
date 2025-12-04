@@ -55,7 +55,7 @@ export class WhatsAppController {
 
       // Descargar el video si es una URL
       let inputPath: string;
-      if (videoUrl.startsWith('http')) {
+      if (videoUrl.startsWith('https')) {
         const tempInputPath = path.join(tempDir, `input_${Date.now()}.mp4`);
         await this.downloadVideo(videoUrl, tempInputPath);
         inputPath = tempInputPath;
@@ -83,7 +83,7 @@ export class WhatsAppController {
       // Si el video ya es menor que el tamaño objetivo, retornarlo sin comprimir
       if (originalSize <= targetSize) {
         // Si es una URL, retornarla directamente
-        if (videoUrl.startsWith('http')) {
+        if (videoUrl.startsWith('https')) {
           if (inputPath !== videoUrl && fs.existsSync(inputPath)) {
             fs.unlinkSync(inputPath);
           }

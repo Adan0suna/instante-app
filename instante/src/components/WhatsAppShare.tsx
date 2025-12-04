@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Progress } from './ui/progress';
 import { Alert } from './ui/alert';
 import { MessageCircle, Link, FileVideo, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { getBackendUrl } from '../lib/config';
 
 interface WhatsAppShareProps {
   videoUrl: string;
@@ -53,7 +54,7 @@ export function WhatsAppShare({ videoUrl, videoTitle, videoSize, onClose, onShar
       }, 200);
 
       // Llamar al backend para comprimir
-      const response = await fetch('http://localhost:3001/whatsapp/compress', {
+      const response = await fetch(getBackendUrl('/whatsapp/compress'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,13 +73,13 @@ export function WhatsAppShare({ videoUrl, videoTitle, videoSize, onClose, onShar
       }
 
       const result = await response.json();
-      const finalUrl = result.compressedUrl 
-        ? (result.compressedUrl.startsWith('http') ? result.compressedUrl : `http://localhost:3001${result.compressedUrl}`)
+      const finalUrl = result.compressedUrl
+        ? (result.compressedUrl.startsWith('http') ? result.compressedUrl : getBackendUrl(result.compressedUrl))
         : videoUrl;
-      
+
       setCompressedVideoUrl(finalUrl);
       setSuccess(true);
-      
+
       if (onShare) {
         onShare();
       }
@@ -96,22 +97,22 @@ export function WhatsAppShare({ videoUrl, videoTitle, videoSize, onClose, onShar
   };
 
   const shareToWhatsApp = (urlToShare: string, isVideo: boolean) => {
-    const message = videoTitle 
+    const message = videoTitle
       ? `🎬 ${videoTitle}\n\n${urlToShare}`
       : `🎬 Video compartido desde Instante\n\n${urlToShare}`;
 
     // Codificar el mensaje para URL
     const encodedMessage = encodeURIComponent(message);
-    
+
     // Crear URL de WhatsApp
     // Para compartir video: usamos el protocolo whatsapp:// o https://wa.me/?text=
     // Nota: WhatsApp Web/Desktop no puede recibir archivos directamente desde la web
     // Solo podemos compartir el enlace
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-    
+
     // Abrir WhatsApp
     window.open(whatsappUrl, '_blank');
-    
+
     setIsOpen(false);
     onClose();
   };

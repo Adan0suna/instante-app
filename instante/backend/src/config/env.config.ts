@@ -45,7 +45,7 @@ export const envConfig = {
       'GOOGLE_REDIRECT_URI',
       isDevelopment 
         ? 'http://localhost:3001/google-drive/oauth-callback'
-        : ''
+        : 'https://instante-app-production.up.railway.app/google-drive/oauth-callback'
     ),
   },
   

@@ -15,7 +15,7 @@ export class RecordingController {
   constructor(
     private readonly recordingService: RecordingService,
     private readonly storageService: StorageService,
-  ) {}
+  ) { }
 
   @Post()
   async startRecording(@Body('title') title: string): Promise<Recording> {
@@ -115,36 +115,36 @@ export class RecordingController {
         embedUrl: uploadResult.embedUrl || uploadResult.viewUrl,
         fileId: uploadResult.fileId,
       };
-      
+
       // Crear video temporal automáticamente
       const tempVideoId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const tempDir = './uploads/temp';
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
-      
+
       // Copiar el archivo original como temporal
       const tempVideoPath = path.join(tempDir, `temp_video_${tempVideoId}.mp4`);
       fs.copyFileSync(file.path, tempVideoPath);
-      
+
       console.log('✅ Video temporal creado automáticamente:', {
         tempVideoId,
         tempVideoPath,
         fileSize: (file.size / 1024 / 1024).toFixed(2) + ' MB'
       });
-      
+
       // Verificar que el archivo temporal existe
       if (fs.existsSync(tempVideoPath)) {
         console.log('✅ Archivo temporal existe en:', tempVideoPath);
       } else {
         console.error('❌ Archivo temporal NO existe en:', tempVideoPath);
       }
-      
+
       // Limpiar archivo original
       fs.unlinkSync(file.path);
-      
+
       // Devolver información del video para que el frontend la guarde en la base de datos
-      return res.json({ 
+      return res.json({
         url: driveUrls.embedUrl, // Usar la URL de embed por defecto
         driveUrl: driveUrls.embedUrl,
         viewUrl: driveUrls.viewUrl,
@@ -175,7 +175,7 @@ export class RecordingController {
       console.log('file:', file);
       console.log('title:', title);
       console.log('tokens:', tokens);
-      
+
       if (!file) {
         console.error('No se recibió archivo');
         return res.status(400).json({ error: 'No se recibió archivo' });
@@ -188,7 +188,7 @@ export class RecordingController {
         console.error('No se recibió título');
         return res.status(400).json({ error: 'No se recibió título' });
       }
-      
+
       let userTokens;
       try {
         userTokens = JSON.parse(tokens);
@@ -196,37 +196,37 @@ export class RecordingController {
         console.error('Error al parsear tokens:', parseError);
         return res.status(400).json({ error: 'Error al parsear tokens', details: parseError });
       }
-      
+
       if (!file.path || typeof file.path !== 'string') {
         console.error('file.path no es un string válido:', file.path);
         return res.status(400).json({ error: 'file.path no es válido', value: file.path });
       }
-      
+
       // Usar el título del partido como nombre del archivo
       const options = {
         folderId: undefined,
         bitrate: '2000k', // Calidad media para grabaciones
         resolution: '1280x720' // HD
       };
-      
+
       console.log('Llamando a compressAndUploadToDrive con:', file.path, userTokens, options);
       const driveUrls = await this.recordingService.compressAndUploadToDrive(
         file.path,
         userTokens,
         { ...options, title }
       );
-      
+
       // Limpiar archivo original
       fs.unlinkSync(file.path);
-      
-      return res.json({ 
+
+      return res.json({
         url: driveUrls.embedUrl,
         driveUrl: driveUrls.embedUrl,
         viewUrl: driveUrls.viewUrl,
         previewUrl: driveUrls.previewUrl,
         embedUrl: driveUrls.embedUrl,
         fileId: driveUrls.fileId,
-        success: true 
+        success: true
       });
     } catch (error) {
       console.error('Error general en uploadRecordingToDrive:', error);
@@ -252,12 +252,12 @@ export class RecordingController {
       console.log('fileName:', fileName);
       console.log('storageProvider:', storageProvider);
       console.log('folderId:', folderId);
-      
+
       if (!file) {
         console.error('No se recibió archivo de clip');
         return res.status(400).json({ error: 'No se recibió archivo de clip' });
       }
-      
+
       if (!file.path || typeof file.path !== 'string') {
         console.error('file.path no es un string válido:', file.path);
         return res.status(400).json({ error: 'file.path no es válido', value: file.path });
@@ -294,7 +294,7 @@ export class RecordingController {
       } else {
         return res.status(400).json({ error: `Proveedor de almacenamiento '${storageProvider}' no soportado` });
       }
-      
+
       console.log('Subiendo clip:', fileName, 'a', storageProvider);
       const uploadResult = await this.storageService.compressAndUpload(
         storageProvider,
@@ -302,12 +302,12 @@ export class RecordingController {
         credentials,
         { folderId, title: fileName }
       );
-      
+
       // Limpiar archivo original
       fs.unlinkSync(file.path);
-      
+
       console.log('✅ Clip subido exitosamente:', uploadResult.viewUrl);
-      return res.json({ 
+      return res.json({
         driveUrl: uploadResult.previewUrl || uploadResult.viewUrl,
         fileId: uploadResult.fileId,
         provider: uploadResult.provider,
@@ -380,7 +380,7 @@ export class RecordingController {
   async getTempVideo(@Param('videoId') videoId: string, @Res() res: Response) {
     try {
       const tempVideoPath = path.join('./uploads/temp', `temp_video_${videoId}.mp4`);
-      
+
       if (!fs.existsSync(tempVideoPath)) {
         return res.status(404).json({ error: 'Video temporal no encontrado' });
       }
@@ -388,7 +388,7 @@ export class RecordingController {
       // Servir el archivo de video
       res.setHeader('Content-Type', 'video/mp4');
       res.setHeader('Content-Disposition', `inline; filename="temp_video_${videoId}.mp4"`);
-      
+
       const stream = fs.createReadStream(tempVideoPath);
       stream.pipe(res);
 
@@ -402,7 +402,7 @@ export class RecordingController {
   async deleteTempVideo(@Param('videoId') videoId: string, @Res() res: Response) {
     try {
       const tempVideoPath = path.join('./uploads/temp', `temp_video_${videoId}.mp4`);
-      
+
       if (fs.existsSync(tempVideoPath)) {
         fs.unlinkSync(tempVideoPath);
         console.log('🗑️ Video temporal eliminado:', tempVideoPath);
@@ -429,16 +429,17 @@ export class GoogleDriveController {
     try {
       const { tokens } = await oauth2Client.getToken(code);
       // Redirige al frontend con los tokens en la URL
-      const frontendUrl = 'http://localhost:3000/conectar-drive';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const params = new URLSearchParams({
         access_token: tokens.access_token || '',
         refresh_token: tokens.refresh_token || '',
         expires_in: tokens.expiry_date ? tokens.expiry_date.toString() : '',
         token_type: tokens.token_type || '',
       }).toString();
-      return res.redirect(`${frontendUrl}?${params}`);
+      return res.redirect(`${frontendUrl}/conectar-drive?${params}`);
     } catch (error) {
       return res.status(400).json({ error: 'Error al obtener el token de Google', details: error });
     }
   }
+
 } 

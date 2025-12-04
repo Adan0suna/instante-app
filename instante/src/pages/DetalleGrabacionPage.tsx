@@ -23,6 +23,7 @@ import { WhatsAppShare } from "../components/WhatsAppShare";
 import { useClips } from "../hooks/useClips";
 import { useTempVideo } from "../hooks/useTempVideo";
 import { useUploadQueue } from "../hooks/useUploadQueue";
+import { getBackendUrl, isBackendUrl } from '../lib/config';
 
 
 export default function DetalleGrabacionPage() {
@@ -94,7 +95,7 @@ export default function DetalleGrabacionPage() {
           videos: matchData.videos,
           clips: matchData.clips
         })
-        
+
         // Verificar si hay un video temporal para este partido
         try {
           const stored = localStorage.getItem(`tempVideo_${matchData.id}`);
@@ -106,7 +107,7 @@ export default function DetalleGrabacionPage() {
         } catch (err) {
           console.error('❌ Error obteniendo video temporal:', err);
         }
-        
+
         // Configurar el estado del video
         const hasTempVideo = localStorage.getItem(`tempVideo_${matchData.id}`) !== null;
         if (matchData.videos.length > 0 || hasTempVideo) {
@@ -145,7 +146,7 @@ export default function DetalleGrabacionPage() {
     async function loadEditedVideos() {
       try {
         setLoadingEditedVideos(true);
-        const response = await fetch('http://localhost:3001/recortes/edited');
+        const response = await fetch(getBackendUrl('/recortes/edited'));
         if (response.ok) {
           const videos = await response.json();
           setEditedVideos(videos);
@@ -183,8 +184,8 @@ export default function DetalleGrabacionPage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center text-red-500">
           <p>{error}</p>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="mt-4"
             onClick={() => navigate("/partidos")}
           >
@@ -223,12 +224,12 @@ export default function DetalleGrabacionPage() {
       alert('No hay video disponible para crear clips. Sube un video temporal primero.');
       return;
     }
-    
+
     createClip(videoPath, startTime, endTime, description, match.id, selectedAliasId, tempVideoId)
       .then(async () => {
         setShowClipCreator(false);
         alert('Clip creado exitosamente');
-        
+
         // Refrescar los datos del partido para obtener los clips actualizados
         try {
           const updatedMatch = await getMatchDetails(match.id);
@@ -253,13 +254,13 @@ export default function DetalleGrabacionPage() {
   // Función para descargar video
   async function handleDownloadVideo(videoUrl: string, filename: string) {
     try {
-      const fullUrl = videoUrl.startsWith('http') 
-        ? videoUrl 
-        : `http://localhost:3001${videoUrl}`;
-      
+      const fullUrl = videoUrl.startsWith('http')
+        ? videoUrl
+        : getBackendUrl(videoUrl);
+
       const response = await fetch(fullUrl);
       if (!response.ok) throw new Error('Error descargando el video');
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -278,16 +279,16 @@ export default function DetalleGrabacionPage() {
   // Función para preparar video para subir a YouTube
   async function handleUploadToYouTube(videoUrl: string, filename: string) {
     try {
-      const fullUrl = videoUrl.startsWith('http') 
-        ? videoUrl 
-        : `http://localhost:3001${videoUrl}`;
-      
+      const fullUrl = videoUrl.startsWith('http')
+        ? videoUrl
+        : getBackendUrl(videoUrl);
+
       const response = await fetch(fullUrl);
       if (!response.ok) throw new Error('Error obteniendo el video');
-      
+
       const blob = await response.blob();
       const file = new File([blob], filename, { type: 'video/mp4' });
-      
+
       setYoutubeUploaderVideo(file);
       setYoutubeUploaderTitle(filename.replace('.mp4', '').replace(/_/g, ' '));
       setShowYouTubeUploader(true);
@@ -299,11 +300,11 @@ export default function DetalleGrabacionPage() {
 
   async function handleDeleteMatch() {
     if (!match) return;
-    
+
     const confirmDelete = window.confirm(
       `¿Estás seguro de que quieres eliminar el partido "${match.title}"? Esta acción no se puede deshacer y eliminará todos los clips y videos asociados.`
     );
-    
+
     if (confirmDelete) {
       try {
         await deleteMatch(match.id);
@@ -320,7 +321,7 @@ export default function DetalleGrabacionPage() {
     console.log('🎬 handlePlayLocalClips llamado');
     console.log('🎬 localClips:', localClips);
     console.log('🎬 localClips.length:', localClips.length);
-    
+
     if (localClips.length > 0) {
       console.log('🎬 Activando reproductor en cola con clips:', localClips);
       setShowClipQueue(true);
@@ -333,10 +334,10 @@ export default function DetalleGrabacionPage() {
 
   function getClipThumbnailUrl(videoUrl: string, startTime: number) {
     // Si es un video temporal, no podemos generar thumbnail, así que retornamos null
-    if (videoUrl.includes('localhost:3001') || videoUrl.includes('temp-video')) {
+    if (isBackendUrl(videoUrl)) {
       return null;
     }
-    
+
     // Para videos de Google Drive
     const match = videoUrl.match(/\/d\/([^/]+)/);
     if (!match) return null;
@@ -348,7 +349,7 @@ export default function DetalleGrabacionPage() {
   return (
     <div className="flex-1">
       <div className="flex-1">
-        <VideoStatus 
+        <VideoStatus
           status={videoStatus}
           error={videoError || undefined}
           onRetry={() => {
@@ -385,8 +386,8 @@ export default function DetalleGrabacionPage() {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Volver
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => setShowTempVideoUploader(true)}
                     >
@@ -398,8 +399,8 @@ export default function DetalleGrabacionPage() {
                       const pendingUpload = pendingUploads.find(upload => upload.matchId === match.id);
                       if (pendingUpload) {
                         return (
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => processQueue()}
                             disabled={isProcessing}
@@ -421,8 +422,8 @@ export default function DetalleGrabacionPage() {
                       }
                       return null;
                     })()}
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => setShowClipCreator(true)}
                       disabled={!match || (!match.videos.length && !currentTempVideoId)}
@@ -430,8 +431,8 @@ export default function DetalleGrabacionPage() {
                       <Scissors className="mr-2 h-4 w-4" />
                       Crear Clip
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => setShowYouTubeUploader(true)}
                       disabled={!match || (!match.videos.length && !currentTempVideoId)}
@@ -439,8 +440,8 @@ export default function DetalleGrabacionPage() {
                       <Youtube className="mr-2 h-4 w-4" />
                       Subir a YouTube
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => {
                         if (match.clips.length > 0) {
@@ -455,8 +456,8 @@ export default function DetalleGrabacionPage() {
                       <Play className="mr-2 h-4 w-4" />
                       Reproducir Clips ({match.clips.length})
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => {
                         if (match.clips.length > 0) {
@@ -470,8 +471,8 @@ export default function DetalleGrabacionPage() {
                       <Scissors className="mr-2 h-4 w-4" />
                       Generar Video Completo
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => {
                         console.log('🔍 Debug completo del partido:', match)
@@ -480,8 +481,8 @@ export default function DetalleGrabacionPage() {
                     >
                       Debug
                     </Button>
-                    <Button 
-                      variant="destructive" 
+                    <Button
+                      variant="destructive"
                       size="sm"
                       onClick={handleDeleteMatch}
                     >
@@ -520,8 +521,8 @@ export default function DetalleGrabacionPage() {
                 <CardHeader>
                   <CardTitle>Video del partido</CardTitle>
                   <CardDescription>
-                    {currentTempVideoId 
-                      ? 'Video temporal del partido' 
+                    {currentTempVideoId
+                      ? 'Video temporal del partido'
                       : `Video principal del partido - ${match.videos[0]?.video_type || 'Video principal'}`
                     }
                   </CardDescription>
@@ -547,7 +548,7 @@ export default function DetalleGrabacionPage() {
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Estado de subida */}
                     {(() => {
                       const pendingUpload = pendingUploads.find(upload => upload.matchId === match.id);
@@ -568,20 +569,20 @@ export default function DetalleGrabacionPage() {
                       }
                       return null;
                     })()}
-                    
+
                     {/* Reproductor de video */}
                     <div className="flex justify-center">
                       {(() => {
-                        const videoUrl = currentTempVideoId 
+                        const videoUrl = currentTempVideoId
                           ? getTempVideoUrl(currentTempVideoId)
                           : (match.videos[0]?.video_url || '');
-                        
 
-                        
+
+
                         return (
                           <VideoPlayer
                             videoUrl={videoUrl}
-                            title={currentTempVideoId 
+                            title={currentTempVideoId
                               ? 'Video temporal del partido'
                               : (match.videos[0]?.video_type || 'Video del partido')
                             }
@@ -633,26 +634,25 @@ export default function DetalleGrabacionPage() {
 
                   </div>
                 </CardHeader>
-                                  <CardContent>
-                    {/* Información de depuración */}
-                    <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg mb-4">
-                      <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Información de clips:</h4>
-                      <div className="text-sm text-green-800 dark:text-green-200 space-y-1">
-                        <p><strong>Total de clips:</strong> {match.clips.length}</p>
-                        <p><strong>Clips con URL:</strong> {match.clips.filter(c => c.clip_url).length}</p>
-                        <p><strong>Clips sin URL:</strong> {match.clips.filter(c => !c.clip_url).length}</p>
-                      </div>
+                <CardContent>
+                  {/* Información de depuración */}
+                  <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg mb-4">
+                    <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Información de clips:</h4>
+                    <div className="text-sm text-green-800 dark:text-green-200 space-y-1">
+                      <p><strong>Total de clips:</strong> {match.clips.length}</p>
+                      <p><strong>Clips con URL:</strong> {match.clips.filter(c => c.clip_url).length}</p>
+                      <p><strong>Clips sin URL:</strong> {match.clips.filter(c => !c.clip_url).length}</p>
                     </div>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {match.clips.map((clip, idx) => {
                       const isSelected = queuePlaying && queueIndex === idx;
-                      
+
                       return (
                         <div
                           key={clip.id}
-                          className={`relative aspect-video rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:scale-105 ${
-                            isSelected ? 'ring-4 ring-green-600 bg-green-50' : 'hover:shadow-lg'
-                          }`}
+                          className={`relative aspect-video rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:scale-105 ${isSelected ? 'ring-4 ring-green-600 bg-green-50' : 'hover:shadow-lg'
+                            }`}
                           onClick={() => setSelectedClip(clip)} // <-- aqui modificacion para repro individual
                         >
                           {/* Indicador de selección MUY visible */}
@@ -661,112 +661,112 @@ export default function DetalleGrabacionPage() {
                               <span className="font-bold text-sm">▶ CLIP ACTIVO {idx + 1} ▶</span>
                             </div>
                           )}
-                        {(() => {
-                          // Usar video temporal si está disponible, sino usar video de Drive
-                          const videoUrl = currentTempVideoId 
-                            ? getTempVideoUrl(currentTempVideoId)
-                            : (match.videos[0]?.video_url || '');
-                          
-                          const thumbnailUrl = videoUrl ? getClipThumbnailUrl(videoUrl, parseInterval(clip.start_time)) : null;
-                          return (
-                            <>
-                              {thumbnailUrl && (
-                                <img
-                                  src={thumbnailUrl}
-                                  alt={clip.description}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
-                              )}
-                              <div className={`w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center ${thumbnailUrl ? 'hidden' : ''}`}>
-                                <div className="text-center">
-                                  <Play className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                                  <p className="text-xs text-gray-500">{clip.description}</p>
-                                </div>
-                              </div>
-                            </>
-                          );
-                        })()}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="text-center text-white">
-                            <p className="text-sm font-medium">{clip.description}</p>
-                            <span className="text-xs">{formatTime(parseInterval(clip.start_time))} - {formatTime(parseInterval(clip.end_time))}</span>
-                            {clip.clip_url && (
-                              <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
-                                <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">
-                                  ✅ Clip separado
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingClip(clip);
-                                    setShowVideoEditor(true);
-                                  }}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  <Wand2 className="h-3 w-3 mr-1" />
-                                  Editar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const clipFileName = clip.clip_url.split('/').pop() || `clip_${clip.id}.mp4`;
-                                    handleDownloadVideo(clip.clip_url, clipFileName);
-                                  }}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  <Download className="h-3 w-3 mr-1" />
-                                  Descargar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const clipFileName = clip.clip_url.split('/').pop() || `clip_${clip.id}.mp4`;
-                                    const clipTitle = clip.description || `Clip ${clip.id}`;
-                                    handleUploadToYouTube(clip.clip_url, clipFileName);
-                                  }}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  <Youtube className="h-3 w-3 mr-1" />
-                                  YouTube
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const clipUrl = clip.clip_url.startsWith('http') 
-                                      ? clip.clip_url 
-                                      : `http://localhost:3001${clip.clip_url}`;
-                                    setWhatsAppShareVideoUrl(clipUrl);
-                                    setWhatsAppShareTitle(clip.description || `Clip del partido`);
-                                    setShowWhatsAppShare(true);
-                                  }}
-                                  className="h-6 px-2 text-xs bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                                >
-                                  <MessageCircle className="h-3 w-3 mr-1" />
-                                  WhatsApp
-                                </Button>
-                              </div>
-                            )}
-                            
+                          {(() => {
+                            // Usar video temporal si está disponible, sino usar video de Drive
+                            const videoUrl = currentTempVideoId
+                              ? getTempVideoUrl(currentTempVideoId)
+                              : (match.videos[0]?.video_url || '');
 
+                            const thumbnailUrl = videoUrl ? getClipThumbnailUrl(videoUrl, parseInterval(clip.start_time)) : null;
+                            return (
+                              <>
+                                {thumbnailUrl && (
+                                  <img
+                                    src={thumbnailUrl}
+                                    alt={clip.description}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                )}
+                                <div className={`w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center ${thumbnailUrl ? 'hidden' : ''}`}>
+                                  <div className="text-center">
+                                    <Play className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                                    <p className="text-xs text-gray-500">{clip.description}</p>
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="text-center text-white">
+                              <p className="text-sm font-medium">{clip.description}</p>
+                              <span className="text-xs">{formatTime(parseInterval(clip.start_time))} - {formatTime(parseInterval(clip.end_time))}</span>
+                              {clip.clip_url && (
+                                <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
+                                  <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+                                    ✅ Clip separado
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingClip(clip);
+                                      setShowVideoEditor(true);
+                                    }}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    <Wand2 className="h-3 w-3 mr-1" />
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const clipFileName = clip.clip_url.split('/').pop() || `clip_${clip.id}.mp4`;
+                                      handleDownloadVideo(clip.clip_url, clipFileName);
+                                    }}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Descargar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const clipFileName = clip.clip_url.split('/').pop() || `clip_${clip.id}.mp4`;
+                                      const clipTitle = clip.description || `Clip ${clip.id}`;
+                                      handleUploadToYouTube(clip.clip_url, clipFileName);
+                                    }}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    <Youtube className="h-3 w-3 mr-1" />
+                                    YouTube
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const clipUrl = clip.clip_url.startsWith('http')
+                                        ? clip.clip_url
+                                        : getBackendUrl(clip.clip_url);
+                                      setWhatsAppShareVideoUrl(clipUrl);
+                                      setWhatsAppShareTitle(clip.description || `Clip del partido`);
+                                      setShowWhatsAppShare(true);
+                                    }}
+                                    className="h-6 px-2 text-xs bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                  >
+                                    <MessageCircle className="h-3 w-3 mr-1" />
+                                    WhatsApp
+                                  </Button>
+                                </div>
+                              )}
+
+
+                            </div>
                           </div>
+                          {queuePlaying && queueIndex === idx && (
+                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                              <Play className="h-3 w-3" />
+                            </div>
+                          )}
                         </div>
-                        {queuePlaying && queueIndex === idx && (
-                          <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                            <Play className="h-3 w-3" />
-                          </div>
-                        )}
-                      </div>
                       );
                     })}
                   </div>
@@ -821,9 +821,9 @@ export default function DetalleGrabacionPage() {
                         key={video.id}
                         className="relative aspect-video rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg group"
                         onClick={() => {
-                          const videoUrl = video.videoUrl.startsWith('http') 
-                            ? video.videoUrl 
-                            : `http://localhost:3001${video.videoUrl}`;
+                          const videoUrl = video.videoUrl.startsWith('http')
+                            ? video.videoUrl
+                            : getBackendUrl(video.videoUrl);
                           window.open(videoUrl, '_blank');
                         }}
                       >
@@ -851,9 +851,9 @@ export default function DetalleGrabacionPage() {
                               variant="secondary"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const videoUrl = video.videoUrl.startsWith('http') 
-                                  ? video.videoUrl 
-                                  : `http://localhost:3001${video.videoUrl}`;
+                                const videoUrl = video.videoUrl.startsWith('http')
+                                  ? video.videoUrl
+                                  : getBackendUrl(video.videoUrl);
                                 window.open(videoUrl, '_blank');
                               }}
                             >
@@ -887,9 +887,9 @@ export default function DetalleGrabacionPage() {
                               variant="outline"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const videoUrl = video.videoUrl.startsWith('http') 
-                                  ? video.videoUrl 
-                                  : `http://localhost:3001${video.videoUrl}`;
+                                const videoUrl = video.videoUrl.startsWith('http')
+                                  ? video.videoUrl
+                                  : getBackendUrl(video.videoUrl);
                                 setWhatsAppShareVideoUrl(videoUrl);
                                 setWhatsAppShareTitle(video.filename || 'Video editado');
                                 setShowWhatsAppShare(true);
@@ -945,7 +945,7 @@ export default function DetalleGrabacionPage() {
                 {(() => {
                   const currentClip = match.clips[queueIndex];
                   const hasClipUrl = currentClip?.clip_url;
-                  
+
                   if (hasClipUrl) {
                     console.log('🎬 Datos del clip actual:', {
                       currentClip,
@@ -989,7 +989,7 @@ export default function DetalleGrabacionPage() {
                       <QueueInlinePlayer
                         clips={match.clips}
                         currentIndex={queueIndex}
-                        videoUrl={currentTempVideoId 
+                        videoUrl={currentTempVideoId
                           ? getTempVideoUrl(currentTempVideoId)
                           : (match.videos[0]?.video_url || '')
                         }
@@ -1013,9 +1013,9 @@ export default function DetalleGrabacionPage() {
                       />
                     );
                   }
-                                 })()}
-               </div>
-             )}
+                })()}
+              </div>
+            )}
 
 
 
@@ -1042,7 +1042,7 @@ export default function DetalleGrabacionPage() {
             {showClipCreator && match && (
               <ClipTimeSelector
                 videoUrl={
-                  currentTempVideoId 
+                  currentTempVideoId
                     ? getTempVideoUrl(currentTempVideoId)
                     : match.videos[0]?.video_url || ''
                 }
@@ -1081,7 +1081,7 @@ export default function DetalleGrabacionPage() {
                 {editingClip && editingClip.clip_url && (
                   <div className="h-full overflow-auto p-4">
                     <VideoEditor
-                      videoUrl={editingClip.clip_url.startsWith('http') ? editingClip.clip_url : `http://localhost:3001${editingClip.clip_url}`}
+                      videoUrl={editingClip.clip_url.startsWith('http') ? editingClip.clip_url : getBackendUrl(editingClip.clip_url)}
                       clipId={(() => {
                         // Extraer el clipId del clip_url (ej: /recortes/file/abc123 -> abc123)
                         if (editingClip.clip_url?.includes('/recortes/file/')) {
@@ -1095,7 +1095,7 @@ export default function DetalleGrabacionPage() {
                         setEditingClip(null);
                         // Refrescar lista de videos editados
                         try {
-                          const response = await fetch('http://localhost:3001/recortes/edited');
+                          const response = await fetch(getBackendUrl('/recortes/edited'));
                           if (response.ok) {
                             const videos = await response.json();
                             setEditedVideos(videos);

@@ -59,7 +59,7 @@ export function ClipPlayer({ clip, onClose }: ClipPlayerProps) {
   const getClipVideoUrl = () => {
     // Para clips locales, usar el archivo del clip generado
     if (clip.clipId) {
-      const clipUrl = `http://localhost:3001/recortes/file/${clip.clipId}`;
+      const clipUrl = `https://instante-app-23g2.vercel.app/recortes/file/${clip.clipId}`;
       console.log('🎬 URL del clip generado:', clipUrl);
       return clipUrl;
     }

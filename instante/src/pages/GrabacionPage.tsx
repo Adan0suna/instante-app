@@ -14,6 +14,7 @@ import { useMatchWithQueue } from '../hooks/useMatchWithQueue'
 import { UploadQueueStatus } from '../components/UploadQueueStatus'
 import { ConnectionNotification } from '../components/ConnectionNotification'
 import type { Match, Clip, UserAlias } from '../lib/supabase/types'
+import { getBackendUrl } from '../lib/config'
 import {
   Clock,
   Tag,
@@ -60,7 +61,7 @@ export default function GrabacionPage() {
     endTime: number;
     description: string;
   }>>([]);
-  
+
   // Estados para el nuevo sistema de etiquetas (inicio/fin)
   const [clipStartTime, setClipStartTime] = useState<number | null>(null)
   const [currentClipLabel, setCurrentClipLabel] = useState<string>('')
@@ -235,7 +236,7 @@ export default function GrabacionPage() {
     if (localVideoCopy || recordedVideo) {
       try {
         console.log('🎬 Procesando clip con FFmpeg...');
-        
+
         let videoBlob;
         if (localVideoCopy) {
           // Usar la copia temporal local
@@ -247,9 +248,9 @@ export default function GrabacionPage() {
         } else {
           throw new Error('No hay video disponible para procesar el clip');
         }
-        
+
         const videoFile = new File([videoBlob], 'temp_video.webm', { type: 'video/webm' });
-        
+
         // Crear FormData para enviar al backend
         const formData = new FormData();
         formData.append('video', videoFile);
@@ -258,12 +259,12 @@ export default function GrabacionPage() {
         formData.append('description', description);
         formData.append('matchId', matchId!.toString());
         formData.append('clipId', clipId.toString());
-        
-        const processResponse = await fetch('http://localhost:3001/recortes/process-clip-file', {
+
+        const processResponse = await fetch(getBackendUrl('/recortes/process-clip-file'), {
           method: 'POST',
           body: formData,
         });
-        
+
         if (processResponse.ok) {
           const processResult = await processResponse.json();
           console.log('✅ Clip procesado exitosamente:', processResult);
@@ -281,12 +282,12 @@ export default function GrabacionPage() {
   const handleVideoRecorded = (videoBlob: Blob) => {
     console.log('[DEBUG] handleVideoRecorded llamado', videoBlob);
     setRecordedVideo(videoBlob)
-    
+
     // Crear copia temporal local del video para procesamiento de clips
     const localVideoUrl = URL.createObjectURL(videoBlob);
     setLocalVideoCopy(localVideoUrl);
     console.log('[DEBUG] Copia temporal local creada:', localVideoUrl);
-    
+
     // Procesar clips pendientes
     if (pendingClips.length > 0) {
       console.log('🎬 Procesando clips pendientes:', pendingClips.length);
@@ -341,18 +342,18 @@ export default function GrabacionPage() {
       setCreatingClips(false);
       const file = new File([recordedVideo], 'grabacion.webm', { type: 'video/webm' });
       console.log('[DEBUG] Llamando a uploadVideo con sistema de cola...');
-      
+
       const result = await uploadVideo(matchId, file, 'Principal', matchTitle, (progress) => {
         console.log('[DEBUG] Progreso de subida:', progress);
         setUploadProgress(progress);
       });
-      
+
       // Verificar si el video fue agregado a la cola o subido inmediatamente
       if (result.queued) {
         console.log('📤 Video agregado a la cola de subidas:', result.message);
         setUploadSuccess(true);
         setUploadError(null);
-        
+
         // Mostrar mensaje de que fue agregado a la cola
         setTimeout(() => {
           setUploading(false);
@@ -360,23 +361,23 @@ export default function GrabacionPage() {
         }, 2000);
       } else {
         // Subida inmediata exitosa
-      setUploadSuccess(true);
-      
-      // Procesar clips pendientes después de subir el video
-      if (pendingClips.length > 0) {
-        console.log('🎬 Procesando clips pendientes después de subir video:', pendingClips.length);
-        for (const pendingClip of pendingClips) {
-          await processClip(pendingClip.clipId, pendingClip.startTime, pendingClip.endTime, pendingClip.description);
+        setUploadSuccess(true);
+
+        // Procesar clips pendientes después de subir el video
+        if (pendingClips.length > 0) {
+          console.log('🎬 Procesando clips pendientes después de subir video:', pendingClips.length);
+          for (const pendingClip of pendingClips) {
+            await processClip(pendingClip.clipId, pendingClip.startTime, pendingClip.endTime, pendingClip.description);
+          }
+          setPendingClips([]); // Limpiar clips pendientes
         }
-        setPendingClips([]); // Limpiar clips pendientes
-      }
-      
-      // Mostrar mensaje de creación de clips
-      setCreatingClips(true);
-      setTimeout(() => {
-        setCreatingClips(false);
-        setPendingRedirect(true);
-      }, 3000); // Mostrar por 3 segundos
+
+        // Mostrar mensaje de creación de clips
+        setCreatingClips(true);
+        setTimeout(() => {
+          setCreatingClips(false);
+          setPendingRedirect(true);
+        }, 3000); // Mostrar por 3 segundos
       }
     } catch (err: any) {
       setUploadError(err?.message || 'Error al subir el video a Drive');
@@ -412,14 +413,14 @@ export default function GrabacionPage() {
       alert('No hay partido activo o alias seleccionado. No se puede guardar el clip.')
       return
     }
-    
+
     if (!localVideoCopy) {
       alert('No hay video local disponible para procesar el clip.')
       return
     }
-    
+
     console.log('[DEBUG] Añadiendo clip manual desde la barra:', { start, end, label, matchId, selectedAliasId })
-    
+
     // Crear el clip en la base de datos primero
     const newClip: Omit<Clip, 'id' | 'created_at'> = {
       match_id: matchId,
@@ -428,15 +429,15 @@ export default function GrabacionPage() {
       start_time: start.toString(),
       end_time: end.toString(),
     }
-    
+
     addClip(newClip)
       .then(async (createdClip) => {
         console.log('[DEBUG] Clip creado en BD:', createdClip);
-        
+
         // Procesar el clip usando la copia temporal local
         try {
           console.log('[DEBUG] Procesando clip con video local...');
-          
+
           // Crear un FormData con el video local
           const videoBlob = await fetch(localVideoCopy).then(r => r.blob());
           const formData = new FormData();
@@ -444,25 +445,25 @@ export default function GrabacionPage() {
           formData.append('startTime', start.toString());
           formData.append('endTime', end.toString());
           formData.append('clipId', createdClip.id.toString());
-          
+
           // Enviar al backend para procesamiento
-          const response = await fetch('http://localhost:3001/recortes/process-local', {
+          const response = await fetch(getBackendUrl('/recortes/process-local'), {
             method: 'POST',
             body: formData
           });
-          
+
           if (!response.ok) {
             throw new Error(`Error al procesar clip: ${response.status}`);
           }
-          
+
           const result = await response.json();
           console.log('[DEBUG] Clip procesado:', result);
-          
+
           // Actualizar la lista de clips
           const match = await getMatchDetails(matchId)
           setClips(match.clips)
           alert('Clip guardado y procesado correctamente')
-          
+
         } catch (error) {
           console.error('[DEBUG] Error al procesar clip:', error);
           alert('Clip guardado pero error al procesar el video')
@@ -506,7 +507,7 @@ export default function GrabacionPage() {
                   {matchTitle}
                 </Badge>
               )}
-      </div>
+            </div>
 
             <div className="flex items-center gap-3">
               {/* Timer */}
@@ -520,22 +521,22 @@ export default function GrabacionPage() {
                 <Badge className="bg-[#FF0000] text-white animate-pulse">
                   <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse" />
                   REC
-              </Badge>
+                </Badge>
               )}
 
               {/* Estado de conexión */}
               <div className="flex items-center gap-2">
-              {isDriveConnected ? (
-                <Badge className="bg-green-600 text-white">
+                {isDriveConnected ? (
+                  <Badge className="bg-green-600 text-white">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Drive conectado
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="bg-yellow-600/20 text-yellow-400 border-yellow-400">
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-yellow-600/20 text-yellow-400 border-yellow-400">
                     <AlertTriangle className="h-3 w-3 mr-1" />
-                  Sin Drive
-                </Badge>
-              )}
+                    Sin Drive
+                  </Badge>
+                )}
 
                 {/* Calidad de conexión */}
                 <Badge variant="outline" className="bg-white/10 text-white border-white/20">
@@ -560,7 +561,7 @@ export default function GrabacionPage() {
                 <strong>Google Drive no conectado:</strong> Los videos se guardarán solo localmente.
                 <Button variant="link" className="ml-2 p-0 h-auto text-yellow-700 underline">
                   Conectar ahora
-              </Button>
+                </Button>
               </span>
             </div>
           </div>
@@ -574,12 +575,12 @@ export default function GrabacionPage() {
               <Card className="bg-white border-[#000000]/10 overflow-hidden">
                 <CardContent className="p-0">
                   <div className="relative bg-black rounded-t-lg" style={{ aspectRatio: '16/9', height: '60vh' }}>
-                <Camera 
-                  isRecording={isRecording}
+                    <Camera
+                      isRecording={isRecording}
                       onAddHighlight={handleAddHighlight}
-                  onVideoRecorded={handleVideoRecorded}
-                />
-                
+                      onVideoRecorded={handleVideoRecorded}
+                    />
+
                     {/* Indicador de grabación */}
                     {isRecording && (
                       <div className="absolute top-4 left-4">
@@ -589,9 +590,9 @@ export default function GrabacionPage() {
                         </div>
                       </div>
                     )}
-            </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Controles principales */}
               <div className="mt-4">
@@ -633,17 +634,17 @@ export default function GrabacionPage() {
                               <Square className="h-4 w-4 mr-2" />
                               Detener
                             </Button>
-              </div>
+                          </div>
                         )}
 
-                <Button
-                  variant="outline"
+                        <Button
+                          variant="outline"
                           className="border-[#000000]/20 bg-transparent"
-                  onClick={() => setShowCameraDialog(true)}
-                >
+                          onClick={() => setShowCameraDialog(true)}
+                        >
                           <Settings className="h-4 w-4 mr-2" />
                           Configurar cámara
-                </Button>
+                        </Button>
                       </div>
 
                       <div className="text-sm text-[#000000]/60">
@@ -682,9 +683,8 @@ export default function GrabacionPage() {
                           key={tag}
                           variant="outline"
                           size="sm"
-                          className={`border-[#000000]/20 hover:bg-[#1A3C34] hover:text-white transition-colors ${
-                            !isRecording ? "opacity-50 cursor-not-allowed" : ""
-                          }`}
+                          className={`border-[#000000]/20 hover:bg-[#1A3C34] hover:text-white transition-colors ${!isRecording ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                           onClick={() => handleAddHighlight(tag)}
                           disabled={!isRecording}
                         >
@@ -692,7 +692,7 @@ export default function GrabacionPage() {
                         </Button>
                       ))}
                     </div>
-                    
+
                     {/* Botón para cancelar clip actual */}
                     {clipStartTime !== null && (
                       <div className="pt-2">
@@ -707,15 +707,15 @@ export default function GrabacionPage() {
                         </Button>
                       </div>
                     )}
-                    
+
                     {!isRecording && (
                       <p className="text-xs text-[#000000]/60 text-center">Inicia la grabación para marcar momentos</p>
                     )}
-                    
+
                     {isRecording && clipStartTime === null && (
                       <p className="text-xs text-[#000000]/60 text-center">Presiona una etiqueta para iniciar un clip</p>
                     )}
-                    
+
                     {isRecording && clipStartTime !== null && (
                       <p className="text-xs text-[#FF6B00] text-center font-medium">
                         Clip activo: {currentClipLabel} - Presiona otra etiqueta para finalizar con ese nombre
@@ -778,7 +778,7 @@ export default function GrabacionPage() {
                 <p className="text-sm text-muted-foreground">No se detectaron cámaras</p>
               )}
             </div>
-            
+
 
           </div>
         </DialogContent>
@@ -824,8 +824,8 @@ export default function GrabacionPage() {
             <CardHeader>
               <CardTitle className="text-center flex items-center justify-center gap-2">
                 <Upload className="h-5 w-5" />
-                {connectionStatus.connectionQuality === 'poor' || !connectionStatus.isOnline 
-                  ? 'Agregando a cola de subidas' 
+                {connectionStatus.connectionQuality === 'poor' || !connectionStatus.isOnline
+                  ? 'Agregando a cola de subidas'
                   : 'Subiendo grabación'}
               </CardTitle>
             </CardHeader>
@@ -833,8 +833,8 @@ export default function GrabacionPage() {
               <Progress value={uploadProgress} className="w-full" />
               <div className="text-center text-sm text-[#000000]/60">{uploadProgress}% completado</div>
               <p className="text-center text-sm">
-                {connectionStatus.connectionQuality === 'poor' || !connectionStatus.isOnline 
-                  ? 'El video se subirá automáticamente cuando la conexión mejore' 
+                {connectionStatus.connectionQuality === 'poor' || !connectionStatus.isOnline
+                  ? 'El video se subirá automáticamente cuando la conexión mejore'
                   : 'Subiendo a Google Drive...'}
               </p>
               {connectionStatus.connectionQuality === 'poor' || !connectionStatus.isOnline ? (
@@ -853,7 +853,7 @@ export default function GrabacionPage() {
           <div className="bg-black/80 text-white p-4 flex flex-col items-center">
             {uploadSuccess && (
               <div className="mb-2">
-                {connectionStatus.connectionQuality === 'poor' || !connectionStatus.isOnline 
+                {connectionStatus.connectionQuality === 'poor' || !connectionStatus.isOnline
                   ? '¡Grabación guardada! Se subirá automáticamente cuando la conexión mejore.'
                   : '¡Grabación subida exitosamente a Google Drive!'}
               </div>
@@ -890,14 +890,14 @@ export default function GrabacionPage() {
           </div>
         </div>
       )}
-      
+
       {/* Componente de estado de la cola de subidas */}
       {pendingUploads.length > 0 && (
         <div className="fixed bottom-4 right-4 z-40 max-w-md">
           <UploadQueueStatus />
         </div>
       )}
-      
+
       {/* Notificaciones de conexión */}
       <ConnectionNotification />
     </div>

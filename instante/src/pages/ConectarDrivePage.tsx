@@ -15,18 +15,18 @@ export default function ConectarDrivePage() {
   const [tokens, setTokens] = useState<any>(null)
   const [debugInfo, setDebugInfo] = useState<string>("")
 
-  console.log('🔍 ConectarDrivePage renderizando...')
+  console.log(' ConectarDrivePage renderizando...')
 
   // Detectar si estamos en el callback de Google usando useEffect
   useEffect(() => {
-    console.log('🔍 useEffect ejecutándose...')
+    console.log(' useEffect ejecutándose...')
     
     const initializeTokens = async () => {
-      console.log('🔍 Inicializando tokens...')
+      console.log(' Inicializando tokens...')
       
       // Primero verificar si ya hay tokens guardados en localStorage
       const savedTokens = localStorage.getItem('googleDriveTokens')
-      console.log('🔍 Tokens guardados:', !!savedTokens)
+      console.log(' Tokens guardados:', !!savedTokens)
       
       if (savedTokens && !isConnected && !tokens) {
         try {
@@ -49,10 +49,10 @@ export default function ConectarDrivePage() {
       const expires_in = params.get('expires_in')
       const token_type = params.get('token_type')
       
-      console.log('🔍 Parámetros de URL:', { access_token: !!access_token, refresh_token: !!refresh_token })
+      console.log(' Parámetros de URL:', { access_token: !!access_token, refresh_token: !!refresh_token })
       
       if (access_token && !isConnected && !tokens && !loading) {
-        console.log('🔍 Procesando tokens de callback...')
+        console.log(' Procesando tokens de callback...')
         setLoading(true)
         const tokenData = { access_token, refresh_token, expires_in, token_type }
         setTokens(tokenData)
