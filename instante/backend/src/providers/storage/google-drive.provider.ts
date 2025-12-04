@@ -15,44 +15,57 @@ export class GoogleDriveProvider implements StorageProvider {
     credentials: { access_token: string; refresh_token: string },
     options?: StorageUploadOptions
   ): Promise<StorageUploadResult> {
-    // Configurar ffmpeg según el sistema operativo
-    const isWindows = process.platform === 'win32';
+    // Intentar comprimir el video con FFmpeg
+    let videoPath = localPath;
+    let mimeType = 'video/webm';
+    let shouldCleanup = false;
 
-    if (isWindows) {
-      // En Windows (desarrollo local), usar la ruta local de ffmpeg
-      const ffmpegPath = path.join(__dirname, '../../../../ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe');
-      const ffprobePath = path.join(__dirname, '../../../../ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffprobe.exe');
-      ffmpeg.setFfmpegPath(ffmpegPath);
-      ffmpeg.setFfprobePath(ffprobePath);
-      console.log('🎬 Usando FFmpeg local (Windows):', ffmpegPath);
-    } else {
-      // En Linux (Railway), usar ffmpeg del sistema
-      // Railway debe tener ffmpeg instalado via Nixpacks
-      ffmpeg.setFfmpegPath('ffmpeg');
-      ffmpeg.setFfprobePath('ffprobe');
-      console.log('🎬 Usando FFmpeg del sistema (Linux)');
+    try {
+      // Configurar ffmpeg según el sistema operativo
+      const isWindows = process.platform === 'win32';
+
+      if (isWindows) {
+        const ffmpegPath = path.join(__dirname, '../../../../ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe');
+        const ffprobePath = path.join(__dirname, '../../../../ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffprobe.exe');
+        ffmpeg.setFfmpegPath(ffmpegPath);
+        ffmpeg.setFfprobePath(ffprobePath);
+        console.log('🎬 Usando FFmpeg local (Windows)');
+      } else {
+        ffmpeg.setFfmpegPath('ffmpeg');
+        ffmpeg.setFfprobePath('ffprobe');
+        console.log('🎬 Usando FFmpeg del sistema (Linux)');
+      }
+
+      // Comprimir el video
+      const compressedPath = path.join(
+        path.dirname(localPath),
+        path.basename(localPath, path.extname(localPath)) + '_compressed.mp4'
+      );
+
+      await new Promise((resolve, reject) => {
+        let command = ffmpeg(localPath)
+          .output(compressedPath)
+          .videoCodec('libx264')
+          .audioCodec('aac')
+          .outputOptions('-preset', 'ultrafast')
+          .on('end', resolve)
+          .on('error', reject);
+
+        if (options?.bitrate) command = command.videoBitrate(options.bitrate);
+        if (options?.resolution) command = command.size(options.resolution);
+
+        command.run();
+      });
+
+      console.log('✅ Video comprimido exitosamente');
+      videoPath = compressedPath;
+      mimeType = 'video/mp4';
+      shouldCleanup = true;
+    } catch (ffmpegError) {
+      console.warn('⚠️ FFmpeg no disponible o falló la compresión, subiendo video original sin comprimir');
+      console.warn('Error:', ffmpegError.message);
+      // Continuar con el video original
     }
-
-    // 1. Comprimir el video
-    const compressedPath = path.join(
-      path.dirname(localPath),
-      path.basename(localPath, path.extname(localPath)) + '_compressed.mp4'
-    );
-
-    await new Promise((resolve, reject) => {
-      let command = ffmpeg(localPath)
-        .output(compressedPath)
-        .videoCodec('libx264')
-        .audioCodec('aac')
-        .outputOptions('-preset', 'ultrafast')
-        .on('end', resolve)
-        .on('error', reject);
-
-      if (options?.bitrate) command = command.videoBitrate(options.bitrate);
-      if (options?.resolution) command = command.size(options.resolution);
-
-      command.run();
-    });
 
     // 2. Subir a Google Drive usando los tokens del usuario
     const oauth2Client = new google.auth.OAuth2();
@@ -64,8 +77,8 @@ export class GoogleDriveProvider implements StorageProvider {
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
     const fileName = options?.title
-      ? `${options.title}_${new Date().toISOString().split('T')[0]}.mp4`
-      : path.basename(compressedPath);
+      ? `${options.title}_${new Date().toISOString().split('T')[0]}.${mimeType === 'video/mp4' ? 'mp4' : 'webm'}`
+      : path.basename(videoPath);
 
     const fileMetadata = {
       name: fileName,
@@ -73,8 +86,8 @@ export class GoogleDriveProvider implements StorageProvider {
     };
 
     const media = {
-      mimeType: 'video/mp4',
-      body: fs.createReadStream(compressedPath),
+      mimeType: mimeType,
+      body: fs.createReadStream(videoPath),
     };
 
     console.log('📤 Subiendo a Google Drive:', fileMetadata);
@@ -112,9 +125,12 @@ export class GoogleDriveProvider implements StorageProvider {
         provider: 'google-drive',
       };
     } catch (err) {
-      // Limpiar archivo comprimido en caso de error
-      if (fs.existsSync(compressedPath)) {
-        fs.unlinkSync(compressedPath);
+      // Limpiar archivos temporales en caso de error
+      if (shouldCleanup && fs.existsSync(videoPath)) {
+        fs.unlinkSync(videoPath);
+      }
+      if (fs.existsSync(localPath)) {
+        fs.unlinkSync(localPath);
       }
       console.error('❌ Error subiendo a Google Drive:', err);
       throw err;
