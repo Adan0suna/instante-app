@@ -77,15 +77,32 @@ export class RecordingController {
       // Preparar credenciales según el proveedor
       let credentials: any;
       if (storageProvider === 'google-drive') {
+        console.log('🔍 Verificando tokens para Google Drive...');
+        console.log('🔍 Tokens recibidos (tipo):', typeof tokens);
+        console.log('🔍 Tokens recibidos (longitud):', tokens?.length);
+
         if (!tokens) {
-          console.error('No se recibieron tokens para Google Drive');
-          return res.status(400).json({ error: 'No se recibieron tokens para Google Drive' });
+          console.error('❌ No se recibieron tokens para Google Drive');
+          return res.status(400).json({ error: 'No se recibieron tokens para Google Drive. Por favor, conecta tu cuenta de Google Drive primero.' });
         }
+
         try {
           credentials = JSON.parse(tokens);
+          console.log('✅ Tokens parseados correctamente:', {
+            hasAccessToken: !!credentials.access_token,
+            hasRefreshToken: !!credentials.refresh_token,
+            accessTokenLength: credentials.access_token?.length,
+          });
+
+          // Validar que los tokens tengan el formato correcto
+          if (!credentials.access_token) {
+            console.error('❌ access_token no encontrado en los tokens');
+            return res.status(400).json({ error: 'Tokens inválidos: falta access_token' });
+          }
         } catch (parseError) {
-          console.error('Error al parsear tokens:', parseError);
-          return res.status(400).json({ error: 'Error al parsear tokens', details: parseError });
+          console.error('❌ Error al parsear tokens:', parseError);
+          console.error('❌ Tokens recibidos:', tokens?.substring(0, 100) + '...');
+          return res.status(400).json({ error: 'Error al parsear tokens. Verifica que estén en formato JSON válido.', details: parseError });
         }
       } else if (storageProvider === 'mega') {
         if (!megaEmail || !megaPassword) {
@@ -100,7 +117,14 @@ export class RecordingController {
         return res.status(400).json({ error: `Proveedor de almacenamiento '${storageProvider}' no soportado` });
       }
 
-      console.log('Llamando a storageService.compressAndUpload con:', file.path, storageProvider, { bitrate, resolution, folderId, title });
+      console.log('📤 Llamando a storageService.compressAndUpload...');
+      console.log('📤 Parámetros:', {
+        filePath: file.path,
+        provider: storageProvider,
+        hasCredentials: !!credentials,
+        options: { bitrate, resolution, folderId, title }
+      });
+
       const uploadResult = await this.storageService.compressAndUpload(
         storageProvider,
         file.path,
@@ -429,7 +453,7 @@ export class GoogleDriveController {
     try {
       const { tokens } = await oauth2Client.getToken(code);
       // Redirige al frontend con los tokens en la URL
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://instante-app-23g2.vercel.app';
       const params = new URLSearchParams({
         access_token: tokens.access_token || '',
         refresh_token: tokens.refresh_token || '',
