@@ -15,11 +15,23 @@ export class GoogleDriveProvider implements StorageProvider {
     credentials: { access_token: string; refresh_token: string },
     options?: StorageUploadOptions
   ): Promise<StorageUploadResult> {
-    // Configurar ffmpeg
-    const ffmpegPath = path.join(__dirname, '../../../../ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe');
-    const ffprobePath = path.join(__dirname, '../../../../ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffprobe.exe');
-    ffmpeg.setFfmpegPath(ffmpegPath);
-    ffmpeg.setFfprobePath(ffprobePath);
+    // Configurar ffmpeg según el sistema operativo
+    const isWindows = process.platform === 'win32';
+
+    if (isWindows) {
+      // En Windows (desarrollo local), usar la ruta local de ffmpeg
+      const ffmpegPath = path.join(__dirname, '../../../../ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe');
+      const ffprobePath = path.join(__dirname, '../../../../ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffprobe.exe');
+      ffmpeg.setFfmpegPath(ffmpegPath);
+      ffmpeg.setFfprobePath(ffprobePath);
+      console.log('🎬 Usando FFmpeg local (Windows):', ffmpegPath);
+    } else {
+      // En Linux (Railway), usar ffmpeg del sistema
+      // Railway debe tener ffmpeg instalado via Nixpacks
+      ffmpeg.setFfmpegPath('ffmpeg');
+      ffmpeg.setFfprobePath('ffprobe');
+      console.log('🎬 Usando FFmpeg del sistema (Linux)');
+    }
 
     // 1. Comprimir el video
     const compressedPath = path.join(
@@ -38,7 +50,7 @@ export class GoogleDriveProvider implements StorageProvider {
 
       if (options?.bitrate) command = command.videoBitrate(options.bitrate);
       if (options?.resolution) command = command.size(options.resolution);
-      
+
       command.run();
     });
 
@@ -50,11 +62,11 @@ export class GoogleDriveProvider implements StorageProvider {
     });
 
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
-    
-    const fileName = options?.title 
+
+    const fileName = options?.title
       ? `${options.title}_${new Date().toISOString().split('T')[0]}.mp4`
       : path.basename(compressedPath);
-    
+
     const fileMetadata = {
       name: fileName,
       parents: options?.folderId ? [options.folderId] : undefined,
@@ -66,7 +78,7 @@ export class GoogleDriveProvider implements StorageProvider {
     };
 
     console.log('📤 Subiendo a Google Drive:', fileMetadata);
-    
+
     try {
       const response = await drive.files.create({
         requestBody: fileMetadata,
@@ -79,7 +91,7 @@ export class GoogleDriveProvider implements StorageProvider {
       }
 
       const fileId = response.data.id;
-      
+
       // Limpiar archivo comprimido
       fs.unlinkSync(compressedPath);
 
