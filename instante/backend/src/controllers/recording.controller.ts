@@ -142,30 +142,10 @@ export class RecordingController {
 
       // Crear video temporal automáticamente
       const tempVideoId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const tempDir = './uploads/temp';
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
+      const tempVideoPath = `/temp-video/${tempVideoId}`;
 
-      // Copiar el archivo original como temporal
-      const tempVideoPath = path.join(tempDir, `temp_video_${tempVideoId}.mp4`);
-      fs.copyFileSync(file.path, tempVideoPath);
-
-      console.log('✅ Video temporal creado automáticamente:', {
-        tempVideoId,
-        tempVideoPath,
-        fileSize: (file.size / 1024 / 1024).toFixed(2) + ' MB'
-      });
-
-      // Verificar que el archivo temporal existe
-      if (fs.existsSync(tempVideoPath)) {
-        console.log('✅ Archivo temporal existe en:', tempVideoPath);
-      } else {
-        console.error('❌ Archivo temporal NO existe en:', tempVideoPath);
-      }
-
-      // Limpiar archivo original
-      fs.unlinkSync(file.path);
+      // NOTA: El archivo original ya fue eliminado por google-drive.provider.ts después de subirlo
+      console.log('✅ Video subido a Google Drive, ID temporal:', tempVideoId);
 
       // Devolver información del video para que el frontend la guarde en la base de datos
       return res.json({
