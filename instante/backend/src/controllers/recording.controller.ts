@@ -429,28 +429,6 @@ export class RecordingController {
     }
   }
 
-  @Get('temp-video/:videoId')
-  async getTempVideo(@Param('videoId') videoId: string, @Res() res: Response) {
-    try {
-      const tempVideoPath = path.join('./uploads/temp', `temp_video_${videoId}.mp4`);
-
-      if (!fs.existsSync(tempVideoPath)) {
-        return res.status(404).json({ error: 'Video temporal no encontrado' });
-      }
-
-      // Servir el archivo de video
-      res.setHeader('Content-Type', 'video/mp4');
-      res.setHeader('Content-Disposition', `inline; filename="temp_video_${videoId}.mp4"`);
-
-      const stream = fs.createReadStream(tempVideoPath);
-      stream.pipe(res);
-
-    } catch (error) {
-      console.error('❌ Error sirviendo video temporal:', error);
-      return res.status(500).json({ error: 'Error sirviendo video temporal' });
-    }
-  }
-
   @Delete('temp-video/:videoId')
   async deleteTempVideo(@Param('videoId') videoId: string, @Res() res: Response) {
     try {
