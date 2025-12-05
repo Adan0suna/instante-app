@@ -234,7 +234,56 @@ export class RecordingController {
       });
     } catch (error) {
       console.error('Error general en uploadRecordingToDrive:', error);
-      return res.status(400).json({ error: 'Error al subir la grabación a Google Drive', details: error });
+      return res.status(500).json({ error: 'Error al subir la grabación a Google Drive', details: error });
+    }
+  }
+
+  @Get('temp-video/:tempVideoId')
+  async getTempVideo(@Param('tempVideoId') tempVideoId: string, @Res() res: Response) {
+    try {
+      // Buscar el video temporal en el directorio
+      const tempDir = path.join(process.cwd(), 'uploads', 'temp');
+
+      // El tempVideoId ya incluye el timestamp y fileId, buscar archivos que coincidan
+      const files = fs.readdirSync(tempDir);
+      const videoFile = files.find(file => file.startsWith(`temp_video_${tempVideoId}`)); // Adjusted to match the file naming convention
+
+      if (!videoFile) {
+        console.error('❌ Video temporal no encontrado:', tempVideoId);
+        return res.status(404).json({
+          error: 'Video temporal no encontrado',
+          tempVideoId
+        });
+      }
+
+      const videoPath = path.join(tempDir, videoFile);
+
+      // Verificar que el archivo existe
+      if (!fs.existsSync(videoPath)) {
+        console.error('❌ Archivo no existe:', videoPath);
+        return res.status(404).json({ error: 'Video temporal no encontrado' });
+      }
+
+      console.log('✅ Sirviendo video temporal:', videoPath);
+
+      // Determinar el tipo MIME basado en la extensión
+      const ext = path.extname(videoFile).toLowerCase();
+      const mimeType = ext === '.mp4' ? 'video/mp4' : 'video/webm';
+
+      // Servir el archivo de video
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Content-Disposition', `inline; filename="${videoFile}"`);
+
+      const stream = fs.createReadStream(videoPath);
+      stream.pipe(res);
+
+    } catch (error) {
+      console.error('❌ Error sirviendo video temporal:', error);
+      return res.status(500).json({
+        error: 'Error sirviendo video temporal',
+        details: error.message
+      });
     }
   }
 
