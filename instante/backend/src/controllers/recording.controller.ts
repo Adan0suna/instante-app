@@ -246,7 +246,8 @@ export class RecordingController {
 
       // El tempVideoId ya incluye el timestamp y fileId, buscar archivos que coincidan
       const files = fs.readdirSync(tempDir);
-      const videoFile = files.find(file => file.startsWith(`temp_video_${tempVideoId}`)); // Adjusted to match the file naming convention
+      // Buscar archivo que empiece con el tempVideoId (sin prefijo temp_video_)
+      const videoFile = files.find(file => file.startsWith(tempVideoId));
 
       if (!videoFile) {
         console.error('❌ Video temporal no encontrado:', tempVideoId);
