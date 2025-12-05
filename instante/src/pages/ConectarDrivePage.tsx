@@ -20,14 +20,14 @@ export default function ConectarDrivePage() {
   // Detectar si estamos en el callback de Google usando useEffect
   useEffect(() => {
     console.log(' useEffect ejecutándose...')
-    
+
     const initializeTokens = async () => {
       console.log(' Inicializando tokens...')
-      
+
       // Primero verificar si ya hay tokens guardados en localStorage
       const savedTokens = localStorage.getItem('googleDriveTokens')
       console.log(' Tokens guardados:', !!savedTokens)
-      
+
       if (savedTokens && !isConnected && !tokens) {
         try {
           const tokenData = JSON.parse(savedTokens)
@@ -48,9 +48,9 @@ export default function ConectarDrivePage() {
       const refresh_token = params.get('refresh_token')
       const expires_in = params.get('expires_in')
       const token_type = params.get('token_type')
-      
+
       console.log(' Parámetros de URL:', { access_token: !!access_token, refresh_token: !!refresh_token })
-      
+
       if (access_token && !isConnected && !tokens && !loading) {
         console.log(' Procesando tokens de callback...')
         setLoading(true)
@@ -58,10 +58,10 @@ export default function ConectarDrivePage() {
         setTokens(tokenData)
         setIsConnected(true)
         setDebugInfo('Tokens obtenidos de callback')
-        
+
         // Guardar tokens en localStorage para uso en grabaciones automáticas
         localStorage.setItem('googleDriveTokens', JSON.stringify(tokenData))
-        
+
         // Enviar tokens al backend para que pueda acceder a Google Drive
         try {
           const response = await fetch(`${BACKEND_URL}/google-drive/set-tokens-from-frontend`, {
@@ -71,7 +71,7 @@ export default function ConectarDrivePage() {
             },
             body: JSON.stringify({ tokens: tokenData }),
           });
-          
+
           if (response.ok) {
             console.log('✅ Tokens enviados al backend exitosamente');
             setDebugInfo('Tokens enviados al backend exitosamente')
@@ -83,7 +83,7 @@ export default function ConectarDrivePage() {
           console.warn('⚠️ Error al enviar tokens al backend:', error);
           setDebugInfo('Error de red al enviar tokens')
         }
-        
+
         setLoading(false)
         // Limpiar la URL sin recargar la página
         window.history.replaceState({}, document.title, window.location.pathname)
@@ -100,7 +100,7 @@ export default function ConectarDrivePage() {
     setLoading(true)
     setError(null)
     setDebugInfo('Obteniendo URL de autorización...')
-    
+
     try {
       const res = await fetch(`${BACKEND_URL}/google-drive/auth-url`)
       const data = await res.json()
@@ -120,19 +120,19 @@ export default function ConectarDrivePage() {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <SidebarNav />
-      <div className="flex-1 flex flex-col ml-16 md:ml-64">
+      <div className="flex-1 flex flex-col">
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <Cloud className="h-6 w-6 text-blue-600" />
             <h1 className="text-lg font-semibold">Almacenamiento en la nube</h1>
           </div>
         </header>
-        
+
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
           <div className="max-w-4xl mx-auto space-y-6">
             {/* Selector de proveedor de almacenamiento */}
             <StorageProviderSelector showCredentials={true} />
-            
+
             {/* Conexión de Google Drive */}
             {provider === 'google-drive' && (
               <Card className="w-full">
@@ -143,35 +143,35 @@ export default function ConectarDrivePage() {
                   <p className="text-center text-muted-foreground">
                     Conecta tu cuenta de Google Drive para guardar y gestionar tus videos de manera segura en la nube.
                   </p>
-            
+
                   {isConnected ? (
-              <div className="flex flex-col items-center gap-2 w-full">
-                <LogIn className="h-8 w-8 text-green-500" />
-                <span className="text-green-600 font-semibold">¡Cuenta conectada!</span>
-                <Button
-                  variant="outline"
-                  className="mt-2 text-red-600 border-red-600 hover:bg-red-50"
-                  onClick={() => {
-                    localStorage.removeItem('googleDriveTokens')
-                    setTokens(null)
-                    setIsConnected(false)
-                    setDebugInfo('Desconectado')
-                  }}
-                >
-                  Desconectar Google Drive
-                </Button>
-              </div>
-            ) : (
-              <Button 
-                onClick={handleConnect} 
-                disabled={loading} 
-                className="bg-[#4285F4] text-white hover:bg-[#357ae8]"
-              >
-                <LogIn className="h-5 w-5 mr-2" />
-                {loading ? "Conectando..." : "Conectar con Google Drive"}
-              </Button>
-            )}
-                  
+                    <div className="flex flex-col items-center gap-2 w-full">
+                      <LogIn className="h-8 w-8 text-green-500" />
+                      <span className="text-green-600 font-semibold">¡Cuenta conectada!</span>
+                      <Button
+                        variant="outline"
+                        className="mt-2 text-red-600 border-red-600 hover:bg-red-50"
+                        onClick={() => {
+                          localStorage.removeItem('googleDriveTokens')
+                          setTokens(null)
+                          setIsConnected(false)
+                          setDebugInfo('Desconectado')
+                        }}
+                      >
+                        Desconectar Google Drive
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleConnect}
+                      disabled={loading}
+                      className="bg-[#4285F4] text-white hover:bg-[#357ae8]"
+                    >
+                      <LogIn className="h-5 w-5 mr-2" />
+                      {loading ? "Conectando..." : "Conectar con Google Drive"}
+                    </Button>
+                  )}
+
                   {error && <span className="text-red-500 text-sm">{error}</span>}
                 </CardContent>
               </Card>

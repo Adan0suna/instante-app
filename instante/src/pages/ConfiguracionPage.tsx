@@ -9,20 +9,20 @@ import { Label } from "../components/ui/label"
 import { Input } from "../components/ui/input"
 import { Switch } from "../components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { 
-  Settings, 
-  Database, 
-  Monitor, 
-  Save, 
-  RefreshCw, 
-  CheckCircle, 
-  AlertCircle, 
-  Youtube, 
-  HardDrive, 
-  Globe, 
-  Palette, 
-  Bell, 
-  Shield, 
+import {
+  Settings,
+  Database,
+  Monitor,
+  Save,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  Youtube,
+  HardDrive,
+  Globe,
+  Palette,
+  Bell,
+  Shield,
   Download,
   Upload,
   Trash2,
@@ -34,7 +34,7 @@ import { useNavigate } from "react-router-dom"
 
 export default function ConfiguracionPage() {
   const navigate = useNavigate()
-  
+
   // Estados para la configuración
   const [settings, setSettings] = useState({
     // Configuración de grabación
@@ -42,23 +42,23 @@ export default function ConfiguracionPage() {
     recordingFormat: 'mp4',
     autoSave: true,
     compressionLevel: 'medium',
-    
+
     // Configuración de integraciones
     youtubeConnected: false,
     driveConnected: false,
-    
+
     // Preferencias generales
     language: 'es',
     theme: 'light',
     notifications: true,
     autoUpload: false,
-    
+
     // Configuración avanzada
     storagePath: '',
     maxStorageSize: '50GB',
     backupEnabled: true
   })
-  
+
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [hasChanges, setHasChanges] = useState(false)
@@ -85,15 +85,15 @@ export default function ConfiguracionPage() {
   const handleSave = async () => {
     setIsSaving(true)
     setSaveStatus('idle')
-    
+
     try {
       // Simular guardado
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       localStorage.setItem('instante-settings', JSON.stringify(settings))
       setSaveStatus('success')
       setHasChanges(false)
-      
+
       // Resetear estado después de 2 segundos
       setTimeout(() => setSaveStatus('idle'), 2000)
     } catch (error) {
@@ -127,9 +127,9 @@ export default function ConfiguracionPage() {
 
   const handleExportSettings = () => {
     const dataStr = JSON.stringify(settings, null, 2)
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
     const exportFileDefaultName = 'instante-settings.json'
-    
+
     const linkElement = document.createElement('a')
     linkElement.setAttribute('href', dataUri)
     linkElement.setAttribute('download', exportFileDefaultName)
@@ -153,8 +153,8 @@ export default function ConfiguracionPage() {
   }
 
   return (
-    <div className="flex-1">
-      <div className="flex-1">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-50 via-yellow-50 to-green-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="flex-1 flex flex-col">
         {/* Header mejorado */}
         <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex h-16 items-center justify-between px-6">
@@ -166,7 +166,7 @@ export default function ConfiguracionPage() {
                 Personaliza tu experiencia con Instante
               </p>
             </div>
-            
+
             {/* Acciones de guardado */}
             <div className="flex items-center gap-3">
               {hasChanges && (
@@ -175,7 +175,7 @@ export default function ConfiguracionPage() {
                   <span>Cambios sin guardar</span>
                 </div>
               )}
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -185,7 +185,7 @@ export default function ConfiguracionPage() {
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Restaurar
               </Button>
-              
+
               <Button
                 onClick={handleSave}
                 disabled={!hasChanges || isSaving}
@@ -203,14 +203,14 @@ export default function ConfiguracionPage() {
                   </>
                 )}
               </Button>
-              
+
               {saveStatus === 'success' && (
                 <div className="flex items-center gap-2 text-green-600 text-sm">
                   <CheckCircle className="h-4 w-4" />
                   <span>Guardado</span>
                 </div>
               )}
-              
+
               {saveStatus === 'error' && (
                 <div className="flex items-center gap-2 text-red-600 text-sm">
                   <AlertCircle className="h-4 w-4" />
@@ -221,26 +221,26 @@ export default function ConfiguracionPage() {
           </div>
         </header>
 
-        <main className="flex-1 p-6">
+        <main className="p-6 pb-8">
           <Tabs defaultValue="grabacion" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3 bg-white/70 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg p-1 shadow-sm">
-              <TabsTrigger 
-                value="grabacion" 
+              <TabsTrigger
+                value="grabacion"
                 className="flex items-center gap-2 data-[state=active]:bg-green-600 data-[state=active]:text-white transition-all duration-200 hover:bg-green-50 rounded-md"
               >
                 <Monitor className="h-4 w-4" />
                 Grabación
               </TabsTrigger>
-              <TabsTrigger 
-                value="integraciones" 
+              <TabsTrigger
+                value="integraciones"
                 className="flex items-center gap-2 data-[state=active]:bg-green-600 data-[state=active]:text-white transition-all duration-200 hover:bg-green-50 rounded-md"
               >
                 <Database className="h-4 w-4" />
                 Integraciones
               </TabsTrigger>
-              
-              <TabsTrigger 
-                value="avanzado" 
+
+              <TabsTrigger
+                value="avanzado"
                 className="flex items-center gap-2 data-[state=active]:bg-green-600 data-[state=active]:text-white transition-all duration-200 hover:bg-green-50 rounded-md"
               >
                 <Shield className="h-4 w-4" />
@@ -270,7 +270,7 @@ export default function ConfiguracionPage() {
                         </div>
                         <p className="text-gray-600 dark:text-gray-400 ml-11">Selecciona la calidad de tus grabaciones</p>
                       </div>
-                      <Select 
+                      <Select
                         value={settings.recordingQuality}
                         onValueChange={(value) => setSettings(prev => ({ ...prev, recordingQuality: value }))}
                       >
@@ -285,7 +285,7 @@ export default function ConfiguracionPage() {
                       </Select>
                     </div>
                   </div>
-                  
+
                   {/* Formato de archivo */}
                   <div className="p-6 border border-green-200 rounded-xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20">
                     <div className="flex items-center justify-between">
@@ -298,7 +298,7 @@ export default function ConfiguracionPage() {
                         </div>
                         <p className="text-gray-600 dark:text-gray-400 ml-11">Formato predeterminado para las grabaciones</p>
                       </div>
-                      <Select 
+                      <Select
                         value={settings.recordingFormat}
                         onValueChange={(value) => setSettings(prev => ({ ...prev, recordingFormat: value }))}
                       >
@@ -327,7 +327,7 @@ export default function ConfiguracionPage() {
                         </div>
                         <p className="text-gray-600 dark:text-gray-400 ml-11">Balance entre calidad y tamaño de archivo</p>
                       </div>
-                      <Select 
+                      <Select
                         value={settings.compressionLevel}
                         onValueChange={(value) => setSettings(prev => ({ ...prev, compressionLevel: value }))}
                       >
@@ -402,7 +402,7 @@ export default function ConfiguracionPage() {
                           </div>
                         </div>
                       </div>
-                      <Button 
+                      <Button
                         className="bg-red-600 hover:bg-red-700 text-white transition-all duration-200 shadow-md hover:shadow-lg"
                         onClick={() => navigate('/youtube')}
                       >
@@ -410,7 +410,7 @@ export default function ConfiguracionPage() {
                       </Button>
                     </div>
                   </div>
-                  
+
                   {/* Google Drive */}
                   <div className="p-6 border border-green-200 rounded-xl bg-gradient-to-br from-green-50 to-yellow-50 dark:from-green-950/20 dark:to-yellow-900/20 hover:shadow-lg transition-all duration-200">
                     <div className="flex items-center justify-between">
@@ -436,7 +436,7 @@ export default function ConfiguracionPage() {
                           </div>
                         </div>
                       </div>
-                      <Button 
+                      <Button
                         className="bg-green-700 hover:bg-green-800 text-white transition-all duration-200 shadow-md hover:shadow-lg"
                         onClick={() => navigate('/conectar-drive')}
                       >
@@ -522,7 +522,7 @@ export default function ConfiguracionPage() {
                           </div>
                         </div>
                       </div>
-                      <Select 
+                      <Select
                         value={settings.maxStorageSize}
                         onValueChange={(value) => setSettings(prev => ({ ...prev, maxStorageSize: value }))}
                       >
@@ -607,9 +607,9 @@ export default function ConfiguracionPage() {
             </TabsContent>
           </Tabs>
         </main>
-        
+
         <footer className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 p-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          © 2024 Instante. Todos los derechos reservados.
+          © 2025 Instante. Todos los derechos reservados.
         </footer>
       </div>
     </div>
