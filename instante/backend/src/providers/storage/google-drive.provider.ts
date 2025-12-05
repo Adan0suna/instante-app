@@ -9,7 +9,7 @@ import { StorageProvider, StorageUploadOptions, StorageUploadResult } from './st
 export class GoogleDriveProvider implements StorageProvider {
     /**
      * Comprime y sube un archivo a Google Drive
-     * Si FFmpeg falla, sube el video original sin comprimir
+     * Guarda copia temporal por 48 horas para edición
      */
     async compressAndUpload(
         localPath: string,
@@ -23,6 +23,10 @@ export class GoogleDriveProvider implements StorageProvider {
         // Intentar comprimir con FFmpeg
         try {
             console.log('🎬 Intentando comprimir video con FFmpeg...');
+
+            // Configurar FFmpeg para usar el binario del sistema (instalado en Docker)
+            ffmpeg.setFfmpegPath('ffmpeg');
+            ffmpeg.setFfprobePath('ffprobe');
 
             const compressedPath = path.join(
                 path.dirname(localPath),
@@ -49,7 +53,6 @@ export class GoogleDriveProvider implements StorageProvider {
         } catch (ffmpegError) {
             console.warn('⚠️ FFmpeg falló, subiendo video original sin comprimir');
             console.warn('Error:', ffmpegError.message);
-            // Continuar con el video original
         }
 
         // Subir a Google Drive
@@ -92,10 +95,29 @@ export class GoogleDriveProvider implements StorageProvider {
 
             const fileId = response.data.id;
 
-            // Limpiar archivos temporales
-            if (shouldCleanup && fs.existsSync(videoPath)) {
+            // Guardar copia temporal del video para edición (48 horas)
+            const tempDir = './uploads/temp';
+            if (!fs.existsSync(tempDir)) {
+                fs.mkdirSync(tempDir, { recursive: true });
+            }
+
+            const tempVideoId = `${Date.now()}_${fileId}`;
+            const tempVideoPath = path.join(tempDir, `${tempVideoId}${path.extname(videoPath)}`);
+
+            try {
+                // Copiar video a directorio temporal
+                fs.copyFileSync(videoPath, tempVideoPath);
+                console.log('💾 Video temporal guardado:', tempVideoPath);
+            } catch (copyError) {
+                console.warn('⚠️ Error al guardar video temporal:', copyError);
+            }
+
+            // Limpiar archivo comprimido si existe
+            if (shouldCleanup && fs.existsSync(videoPath) && videoPath !== localPath) {
                 fs.unlinkSync(videoPath);
             }
+
+            // Limpiar archivo original
             if (fs.existsSync(localPath)) {
                 fs.unlinkSync(localPath);
             }
@@ -115,6 +137,9 @@ export class GoogleDriveProvider implements StorageProvider {
                 embedUrl,
                 downloadUrl,
                 provider: 'google-drive',
+                tempVideoId,
+                tempVideoPath,
+                expiresAt: Date.now() + (48 * 60 * 60 * 1000) // 48 horas
             };
         } catch (err) {
             // Limpiar archivos en caso de error

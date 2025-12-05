@@ -141,10 +141,9 @@ export class RecordingController {
       };
 
       // Crear video temporal automáticamente
-      const tempVideoId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const tempVideoPath = `/temp-video/${tempVideoId}`;
+      const tempVideoId = uploadResult.tempVideoId || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const tempVideoPath = uploadResult.tempVideoPath || `/temp-video/${tempVideoId}`;
 
-      // NOTA: El archivo original ya fue eliminado por google-drive.provider.ts después de subirlo
       console.log('✅ Video subido a Google Drive, ID temporal:', tempVideoId);
 
       // Devolver información del video para que el frontend la guarde en la base de datos
@@ -158,7 +157,8 @@ export class RecordingController {
         matchId: matchId ? parseInt(matchId) : null,
         videoType: videoType || 'Principal',
         tempVideoId, // ID del video temporal creado automáticamente
-        tempVideoPath // Ruta del video temporal
+        tempVideoPath, // Ruta del video temporal
+        expiresAt: uploadResult.expiresAt // Timestamp de expiración (48 horas)
       });
     } catch (error) {
       console.error('Error general en uploadToDrive:', error);

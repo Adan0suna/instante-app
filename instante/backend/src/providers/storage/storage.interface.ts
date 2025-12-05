@@ -16,6 +16,9 @@ export interface StorageUploadResult {
   embedUrl?: string;
   downloadUrl?: string;
   provider: 'google-drive' | 'mega' | 'dropbox' | 'supabase';
+  tempVideoId?: string;
+  tempVideoPath?: string;
+  expiresAt?: number;
 }
 
 export interface StorageProvider {
@@ -47,5 +50,3 @@ export interface StorageProvider {
    */
   deleteFile(fileId: string, credentials?: any): Promise<void>;
 }
-
-
