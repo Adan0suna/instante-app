@@ -25,14 +25,11 @@ ffmpeg.setFfprobePath(ffprobePath);
 
 @Controller('recortes')
 export class RecortesController {
-  // constructor(
-  //   @InjectRepository(Clip)
-  //   private clipRepository: Repository<Clip>,
-  // ) {}
-  
-  // Propiedad temporal sin DB
-  private clipRepository: any = null;
-  
+  constructor(
+    @InjectRepository(Clip)
+    private clipRepository: Repository<Clip>,
+  ) { }
+
   @Post('process-clip')
   async processClip(
     @Body() body: {
@@ -48,7 +45,7 @@ export class RecortesController {
   ) {
     try {
       const { videoPath, tempVideoId, startTime, endTime, description, matchId, clipId } = body;
-      
+
       console.log('🎬 Procesando clip:', {
         videoPath,
         tempVideoId,
@@ -61,7 +58,7 @@ export class RecortesController {
 
       // Determinar la ruta del video a procesar
       let actualVideoPath = videoPath;
-      
+
       // Si tenemos un tempVideoId, usar el video temporal
       if (tempVideoId) {
         actualVideoPath = path.join(process.cwd(), 'uploads', 'temp', `temp_video_${tempVideoId}.mp4`);
@@ -189,7 +186,7 @@ export class RecortesController {
   ) {
     try {
       const { startTime, endTime, description, matchId, clipId } = body;
-      
+
       console.log('🎬 Procesando clip desde archivo:', {
         fileName: file?.filename,
         startTime,
@@ -326,7 +323,7 @@ export class RecortesController {
   async getClipFile(@Param('clipId') clipId: string, @Res() res: Response) {
     try {
       const clipPath = path.join(process.cwd(), 'uploads', 'clips', `clip_${clipId}.mp4`);
-      
+
       if (!fs.existsSync(clipPath)) {
         return res.status(HttpStatus.NOT_FOUND).json({
           error: 'Clip no encontrado'
@@ -336,7 +333,7 @@ export class RecortesController {
       // Servir el archivo de video
       res.setHeader('Content-Type', 'video/mp4');
       res.setHeader('Content-Disposition', `inline; filename="clip_${clipId}.mp4"`);
-      
+
       const stream = fs.createReadStream(clipPath);
       stream.pipe(res);
 
@@ -352,14 +349,14 @@ export class RecortesController {
   async concatenateClips(@Param('matchId') matchId: string, @Res() res: Response) {
     try {
       console.log('🎬 Concatenando clips para partido:', matchId);
-      
+
       // Obtener clips desde la base de datos
       if (!this.clipRepository) {
         return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
           error: 'Base de datos no disponible. Por favor despierta tu proyecto de Supabase.'
         });
       }
-      
+
       const clips = await this.clipRepository.find({
         where: { match_id: parseInt(matchId) },
         order: { id: 'ASC' }
@@ -464,7 +461,7 @@ export class RecortesController {
   async getConcatenatedVideo(@Param('videoId') videoId: string, @Res() res: Response) {
     try {
       const videoPath = path.join(process.cwd(), 'uploads', 'concatenated', `${videoId}.mp4`);
-      
+
       if (!fs.existsSync(videoPath)) {
         return res.status(HttpStatus.NOT_FOUND).json({
           error: 'Video concatenado no encontrado'
@@ -474,7 +471,7 @@ export class RecortesController {
       // Servir el archivo de video
       res.setHeader('Content-Type', 'video/mp4');
       res.setHeader('Content-Disposition', `attachment; filename="${videoId}.mp4"`);
-      
+
       const stream = fs.createReadStream(videoPath);
       stream.pipe(res);
 
@@ -490,7 +487,7 @@ export class RecortesController {
   async getClipsForMatch(@Param('matchId') matchId: string) {
     try {
       const clipsDir = path.join(process.cwd(), 'uploads', 'clips');
-      
+
       if (!fs.existsSync(clipsDir)) {
         return [];
       }
@@ -502,7 +499,7 @@ export class RecortesController {
           const clipId = file.replace('clip_', '').replace('.mp4', '');
           const filePath = path.join(clipsDir, file);
           const stats = fs.statSync(filePath);
-          
+
           return {
             clipId,
             fileName: file,
@@ -525,13 +522,13 @@ export class RecortesController {
   async getClipsFromDatabase(@Param('matchId') matchId: string) {
     try {
       console.log('🔍 Obteniendo clips desde la base de datos para matchId:', matchId);
-      
+
       // Obtener clips desde la base de datos
       if (!this.clipRepository) {
         console.warn('⚠️ DB no disponible');
         return []; // Retornar array vacío si no hay DB
       }
-      
+
       const clips = await this.clipRepository.find({
         where: { match_id: parseInt(matchId) },
         order: { id: 'ASC' }
@@ -606,19 +603,19 @@ export class RecortesController {
   ) {
     try {
       const { clipId, settings } = body;
-      
+
       console.log('🎬 Procesando video editado para clipId:', clipId);
-      
+
       // Parsear settings si es string
       const parsedSettings = typeof settings === 'string' ? JSON.parse(settings) : settings;
-      
+
       console.log('📹 Configuración de edición:', parsedSettings);
-      
+
       // Buscar el clip usando el clipId
       let videoClipId = clipId;
-      
+
       const inputPath = path.join(process.cwd(), 'uploads', 'clips', `clip_${videoClipId}.mp4`);
-      
+
       if (!fs.existsSync(inputPath)) {
         return res.status(HttpStatus.NOT_FOUND).json({
           error: 'Clip no encontrado'
@@ -640,10 +637,10 @@ export class RecortesController {
       console.log('📹 Input:', inputPath);
       console.log('📹 Output:', outputPath);
       console.log('📹 Output existe:', fs.existsSync(outputPath));
-      
+
       // Crear comando FFmpeg
       let ffmpegCommand = ffmpeg(inputPath);
-      
+
       // Construir filtros de video
       const videoFilters: string[] = [];
 
@@ -706,11 +703,11 @@ export class RecortesController {
         const text = parsedSettings.textOverlay.text.replace(/'/g, "\\'").replace(/:/g, '\\:');
         const fontSize = parsedSettings.textOverlay.fontSize || 24;
         const color = parsedSettings.textOverlay.color || '#FFFFFF';
-        
+
         // Separar x e y según la posición
         let xPos = '10';
         let yPos = '10';
-        
+
         switch (parsedSettings.textOverlay.position) {
           case 'top-center':
             xPos = '(w-tw)/2';
@@ -750,7 +747,7 @@ export class RecortesController {
       await new Promise<void>((resolve, reject) => {
         // Normalizar la ruta para Windows
         const normalizedOutputPath = outputPath.replace(/\\/g, '/');
-        
+
         ffmpegCommand
           .outputOptions([
             '-y', // Sobrescribir archivo si existe
@@ -810,18 +807,18 @@ export class RecortesController {
   async listEditedVideos(@Res() res: Response) {
     try {
       const editedDir = path.join(process.cwd(), 'uploads', 'edited');
-      
+
       if (!fs.existsSync(editedDir)) {
         return res.json([]);
       }
 
       const files = fs.readdirSync(editedDir).filter(file => file.endsWith('.mp4'));
-      
+
       const videos = files.map(file => {
         const videoPath = path.join(editedDir, file);
         const stats = fs.statSync(videoPath);
         const videoId = file.replace('.mp4', '');
-        
+
         return {
           id: videoId,
           filename: file,
@@ -850,7 +847,7 @@ export class RecortesController {
   async getEditedVideo(@Param('videoId') videoId: string, @Res() res: Response) {
     try {
       const videoPath = path.join(process.cwd(), 'uploads', 'edited', `${videoId}.mp4`);
-      
+
       if (!fs.existsSync(videoPath)) {
         return res.status(HttpStatus.NOT_FOUND).json({
           error: 'Video editado no encontrado'
@@ -859,7 +856,7 @@ export class RecortesController {
 
       res.setHeader('Content-Type', 'video/mp4');
       res.setHeader('Content-Disposition', `inline; filename="${videoId}.mp4"`);
-      
+
       const stream = fs.createReadStream(videoPath);
       stream.pipe(res);
 
@@ -880,7 +877,7 @@ export class RecortesController {
   private parseInterval(interval: string | number): number {
     if (typeof interval === 'number') return interval;
     if (!interval || typeof interval !== 'string') return 0;
-    
+
     // Parse PostgreSQL interval format (e.g., "00:00:30")
     const parts = interval.split(':');
     if (parts.length === 3) {
