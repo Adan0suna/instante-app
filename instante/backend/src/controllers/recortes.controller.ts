@@ -626,7 +626,9 @@ export class RecortesController {
       const editedDir = path.join(process.cwd(), 'uploads', 'edited');
       if (!fs.existsSync(editedDir)) {
         fs.mkdirSync(editedDir, { recursive: true });
-        console.log('📁 Directorio creado:', editedDir);
+        console.log('📁 Directorio edited creado:', editedDir);
+      } else {
+        console.log('📁 Directorio edited ya existe:', editedDir);
       }
 
       // Generar nombre único para el video editado (sin caracteres especiales)
@@ -738,9 +740,16 @@ export class RecortesController {
             yPos = '10';
         }
 
-        ffmpegCommand = ffmpegCommand.videoFilters(
-          `drawtext=text='${text}':fontsize=${fontSize}:fontcolor=${color}:x=${xPos}:y=${yPos}:box=1:boxcolor=black@0.5:boxborderw=5`
-        );
+        // Usar DejaVu Sans que está disponible en Alpine Linux
+        // Si falla, el video se procesará sin texto
+        try {
+          ffmpegCommand = ffmpegCommand.videoFilters(
+            `drawtext=text='${text}':fontfile=/usr/share/fonts/dejavu/DejaVuSans.ttf:fontsize=${fontSize}:fontcolor=${color}:x=${xPos}:y=${yPos}:box=1:boxcolor=black@0.5:boxborderw=5`
+          );
+          console.log('✅ Texto overlay configurado');
+        } catch (fontError) {
+          console.warn('⚠️ No se pudo agregar texto overlay, continuando sin texto:', fontError);
+        }
       }
 
       // Procesar el video

@@ -1,8 +1,8 @@
 # Usar imagen base de Node.js
 FROM node:18-alpine
 
-# Instalar FFmpeg
-RUN apk add --no-cache ffmpeg
+# Instalar FFmpeg y fuentes para texto overlay
+RUN apk add --no-cache ffmpeg ttf-dejavu
 
 # Crear directorio de trabajo
 WORKDIR /app
