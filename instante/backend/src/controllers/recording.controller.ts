@@ -241,19 +241,33 @@ export class RecordingController {
   @Get('temp-video/:tempVideoId')
   async getTempVideo(@Param('tempVideoId') tempVideoId: string, @Res() res: Response) {
     try {
+      console.log('🔍 Buscando video temporal:', tempVideoId);
+
       // Buscar el video temporal en el directorio
       const tempDir = path.join(process.cwd(), 'uploads', 'temp');
+      console.log('📁 Directorio temp:', tempDir);
+      console.log('📁 Directorio existe:', fs.existsSync(tempDir));
+
+      if (!fs.existsSync(tempDir)) {
+        console.error('❌ Directorio temp no existe');
+        return res.status(404).json({ error: 'Directorio temporal no encontrado' });
+      }
 
       // El tempVideoId ya incluye el timestamp y fileId, buscar archivos que coincidan
       const files = fs.readdirSync(tempDir);
+      console.log('📋 Archivos en temp:', files);
+
       // Buscar archivo que empiece con el tempVideoId (sin prefijo temp_video_)
       const videoFile = files.find(file => file.startsWith(tempVideoId));
+      console.log('🎯 Archivo encontrado:', videoFile);
 
       if (!videoFile) {
         console.error('❌ Video temporal no encontrado:', tempVideoId);
+        console.error('📁 Archivos disponibles en temp:', files);
         return res.status(404).json({
           error: 'Video temporal no encontrado',
-          tempVideoId
+          tempVideoId,
+          availableFiles: files
         });
       }
 
