@@ -124,7 +124,7 @@ export class RecortesController {
             // Crear la URL del clip para servir desde el backend
             const clipUrl = `/recortes/file/${generatedClipId}`;
             console.log('🔗 URL del clip a guardar:', clipUrl);
-            clip.clipUrl = clipUrl;
+            clip.clip_url = clipUrl;
             const savedClip = await this.clipRepository.save(clip);
             console.log('✅ Clip actualizado en la base de datos:', savedClip);
           } else {
@@ -280,7 +280,7 @@ export class RecortesController {
             // Crear la URL del clip para servir desde el backend
             const clipUrl = `/recortes/file/${clipIdGenerated}`;
             console.log('🔗 URL del clip a guardar:', clipUrl);
-            clip.clipUrl = clipUrl;
+            clip.clip_url = clipUrl;
             const savedClip = await this.clipRepository.save(clip);
             console.log('✅ Clip actualizado en la base de datos:', savedClip);
           } else {
@@ -358,7 +358,7 @@ export class RecortesController {
       }
 
       const clips = await this.clipRepository.find({
-        where: { matchId: parseInt(matchId) },
+        where: { match_id: parseInt(matchId) },
         order: { id: 'ASC' }
       });
 
@@ -372,8 +372,8 @@ export class RecortesController {
       const clipsWithFiles = [];
       for (const clip of clips) {
         let clipId = null;
-        if (clip.clipUrl && clip.clipUrl.includes('/recortes/file/')) {
-          clipId = clip.clipUrl.split('/').pop();
+        if (clip.clip_url && clip.clip_url.includes('/recortes/file/')) {
+          clipId = clip.clip_url.split('/').pop();
         }
 
         if (clipId) {
@@ -530,7 +530,7 @@ export class RecortesController {
       }
 
       const clips = await this.clipRepository.find({
-        where: { matchId: parseInt(matchId) },
+        where: { match_id: parseInt(matchId) },
         order: { id: 'ASC' }
       });
 
@@ -541,8 +541,8 @@ export class RecortesController {
         clips.map(async (clip) => {
           // Extraer el clipId del clip_url si existe
           let clipId = null;
-          if (clip.clipUrl && clip.clipUrl.includes('/recortes/file/')) {
-            clipId = clip.clipUrl.split('/').pop();
+          if (clip.clip_url && clip.clip_url.includes('/recortes/file/')) {
+            clipId = clip.clip_url.split('/').pop();
           }
 
           let fileExists = false;
@@ -563,14 +563,14 @@ export class RecortesController {
             id: clip.id,
             clipId: clipId,
             description: clip.description,
-            startTime: clip.startTime,
-            endTime: clip.endTime,
-            duration: this.parseIntervalToSeconds(clip.startTime, clip.endTime),
+            startTime: clip.start_time,
+            endTime: clip.end_time,
+            duration: this.parseIntervalToSeconds(clip.start_time, clip.end_time),
             fileSize: fileExists ? `${(fileSize / (1024 * 1024)).toFixed(2)} MB` : 'No disponible',
             clipPath: filePath,
-            matchId: clip.matchId,
-            aliasId: clip.aliasId,
-            clipUrl: clip.clipUrl,
+            matchId: clip.match_id,
+            aliasId: clip.alias_id,
+            clipUrl: clip.clip_url,
             fileExists,
             createdAt: new Date()
           };

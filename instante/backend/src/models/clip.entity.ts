@@ -1,25 +1,33 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Match } from './match.entity';
+import { Player } from './player.entity';
 
 @Entity('clips')
 export class Clip {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ name: 'match_id' })
-  match_id: number;
+  matchId: number;
 
   @Column({ name: 'alias_id' })
-  alias_id: number;
+  aliasId: number;
 
   @Column({ nullable: true })
   description: string;
 
   @Column({ name: 'start_time', type: 'interval' })
-  start_time: string;
+  startTime: string;
 
   @Column({ name: 'end_time', type: 'interval' })
-  end_time: string;
+  endTime: string;
 
   @Column({ name: 'clip_url', nullable: true })
-  clip_url: string;
+  clipUrl: string;
+
+  @ManyToOne(() => Match, match => match.clips)
+  match: Match;
+
+  @ManyToOne(() => Player, player => player.clips)
+  player: Player;
 }
