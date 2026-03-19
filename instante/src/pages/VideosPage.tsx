@@ -107,6 +107,16 @@ export default function VideosPage() {
     setImportedVideos(prev => prev.filter(video => video.id !== videoId))
   }
 
+  const handleEditVideo = (video: any) => {
+    alert(`Abriendo editor para: "${video.name}"...`)
+    // TODO: Implementar redirección o apertura del editor
+  }
+
+  const handlePlayVideo = (video: any) => {
+    alert(`Reproduciendo: "${video.name}"...`)
+    // TODO: Implementar reproductor de video
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "ready":
@@ -319,6 +329,7 @@ export default function VideosPage() {
                                 <Button
                                   size="sm"
                                   className="bg-[#1A3C34] text-white hover:bg-[#1A3C34]/80 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
+                                  onClick={() => handleEditVideo(video)}
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
                                   Editar
@@ -327,6 +338,7 @@ export default function VideosPage() {
                                   size="sm"
                                   variant="outline"
                                   className="border-[#1A3C34]/30 text-[#1A3C34] hover:bg-[#1A3C34] hover:text-white transition-all duration-200 rounded-lg"
+                                  onClick={() => handlePlayVideo(video)}
                                 >
                                   <Play className="h-4 w-4" />
                                 </Button>
