@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Match, MatchVideo, Clip, UserAlias, ClipCategory, MatchWithDetails, ClipWithDetails } from '../lib/supabase/types'
-import { getMatches, createMatch, addClip, getMatch, getUserAliases, getClipCategories, addVideo, deleteMatch } from '../lib/supabase/matches'
+import { getMatches, getMatchesWithDetails, createMatch, addClip, getMatch, getUserAliases, getClipCategories, addVideo, deleteMatch } from '../lib/supabase/matches'
 import { useUploadQueue } from './useUploadQueue'
 import { useConnectionStatus } from './useConnectionStatus'
 import { getBackendUrl } from '../lib/config'
@@ -16,6 +16,20 @@ export function useMatchWithQueue() {
     setError(null)
     try {
       const matches = await getMatches()
+      return matches
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const getMatchesWithDetailsList = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const matches = await getMatchesWithDetails()
       return matches
     } catch (err: any) {
       setError(err.message)
@@ -283,6 +297,7 @@ export function useMatchWithQueue() {
     loading,
     error,
     getMatches: getMatchesList,
+    getMatchesWithDetails: getMatchesWithDetailsList,
     createMatch: createNewMatch,
     uploadVideo,
     getMatchDetails: getMatchDetailsById,

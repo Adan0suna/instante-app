@@ -36,7 +36,7 @@ import { Progress } from "../components/ui/progress"
 
 export default function GrabacionesPage() {
   const navigate = useNavigate()
-  const { loading, error, getMatches, createMatch, uploadVideo } = useMatchWithQueue()
+  const { loading, error, getMatchesWithDetails, createMatch, uploadVideo } = useMatchWithQueue()
   
   // Estados para la interfaz
   const [searchQuery, setSearchQuery] = useState("")
@@ -55,7 +55,7 @@ export default function GrabacionesPage() {
   useEffect(() => {
     async function fetchMatches() {
       try {
-        const data = await getMatches()
+        const data = await getMatchesWithDetails()
         setMatches(data as MatchWithDetails[])
       } catch (error) {
         console.error('Error al cargar las grabaciones:', error)
@@ -63,7 +63,7 @@ export default function GrabacionesPage() {
     }
 
     fetchMatches()
-  }, [getMatches])
+  }, [getMatchesWithDetails])
 
   // Filtrar y ordenar grabaciones
   const filteredMatches = matches
@@ -120,7 +120,7 @@ export default function GrabacionesPage() {
       })
 
       // Refrescar lista
-      const data = await getMatches()
+      const data = await getMatchesWithDetails()
       setMatches(data as MatchWithDetails[])
       
     } catch (error) {
