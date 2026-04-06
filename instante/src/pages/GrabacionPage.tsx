@@ -30,6 +30,8 @@ import {
   WifiOff,
   Monitor,
   X,
+  Plus,
+  RotateCcw,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -66,10 +68,41 @@ export default function GrabacionPage() {
   const [clipStartTime, setClipStartTime] = useState<number | null>(null)
   const [currentClipLabel, setCurrentClipLabel] = useState<string>('')
 
+  // Etiquetas personalizables
+  const DEFAULT_TAGS = ["Gol", "Falta", "Tarjeta", "Tiro libre", "Penal", "Fuera de juego"]
+  const [tagButtons, setTagButtons] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('customTagLabels')
+      return saved ? JSON.parse(saved) : DEFAULT_TAGS
+    } catch {
+      return DEFAULT_TAGS
+    }
+  })
+  const [newTagInput, setNewTagInput] = useState('')
+
+  // Persistir etiquetas en localStorage al cambiar
+  useEffect(() => {
+    localStorage.setItem('customTagLabels', JSON.stringify(tagButtons))
+  }, [tagButtons])
+
+  const handleAddTag = () => {
+    const trimmed = newTagInput.trim()
+    if (trimmed && !tagButtons.includes(trimmed)) {
+      setTagButtons(prev => [...prev, trimmed])
+    }
+    setNewTagInput('')
+  }
+
+  const handleDeleteTag = (tag: string) => {
+    setTagButtons(prev => prev.filter(t => t !== tag))
+  }
+
+  const handleRestoreDefaultTags = () => {
+    setTagButtons(DEFAULT_TAGS)
+  }
+
   const { createMatch, addClip, uploadVideo, getMatchDetails, getAliases, loading: matchLoading, error: matchError, connectionStatus, pendingUploads } = useMatchWithQueue()
   const navigate = useNavigate()
-
-  const tagButtons = ["Gol", "Falta", "Tarjeta", "Tiro libre", "Penal", "Fuera de juego"]
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -677,21 +710,64 @@ export default function GrabacionPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {/* Cuadrícula de etiquetas */}
                     <div className="grid grid-cols-2 gap-2">
                       {tagButtons.map((tag) => (
-                        <Button
-                          key={tag}
-                          variant="outline"
-                          size="sm"
-                          className={`border-[#000000]/20 hover:bg-[#1A3C34] hover:text-white transition-colors ${!isRecording ? "opacity-50 cursor-not-allowed" : ""
+                        <div key={tag} className="relative group/tag">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={`w-full border-[#000000]/20 hover:bg-[#1A3C34] hover:text-white transition-colors pr-7 ${
+                              !isRecording ? "opacity-50 cursor-not-allowed" : ""
                             }`}
-                          onClick={() => handleAddHighlight(tag)}
-                          disabled={!isRecording}
-                        >
-                          {tag}
-                        </Button>
+                            onClick={() => handleAddHighlight(tag)}
+                            disabled={!isRecording}
+                          >
+                            {tag}
+                          </Button>
+                          {/* Botón eliminar etiqueta - solo visible al hacer hover y cuando NO se está grabando */}
+                          {!isRecording && (
+                            <button
+                              className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-red-100 text-red-500 hover:bg-red-200 flex items-center justify-center opacity-0 group-hover/tag:opacity-100 transition-opacity"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteTag(tag) }}
+                              title={`Eliminar etiqueta "${tag}"`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
                       ))}
                     </div>
+
+                    {/* Agregar nueva etiqueta (solo cuando no se está grabando) */}
+                    {!isRecording && (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Nueva etiqueta..."
+                            value={newTagInput}
+                            onChange={(e) => setNewTagInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddTag() }}
+                            className="h-8 text-sm border-[#000000]/20"
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8 px-2 bg-[#1A3C34] text-white hover:bg-[#1A3C34]/80 shrink-0"
+                            onClick={handleAddTag}
+                            disabled={!newTagInput.trim()}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <button
+                          className="w-full text-xs text-[#000000]/40 hover:text-[#000000]/70 flex items-center justify-center gap-1 transition-colors"
+                          onClick={handleRestoreDefaultTags}
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Restaurar predeterminadas
+                        </button>
+                      </div>
+                    )}
 
                     {/* Botón para cancelar clip actual */}
                     {clipStartTime !== null && (
