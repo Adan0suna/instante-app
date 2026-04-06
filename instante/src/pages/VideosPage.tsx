@@ -7,8 +7,12 @@ import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Label } from "../components/ui/label"
 import { Progress } from "../components/ui/progress"
+import { Input } from "../components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import { useNavigate } from "react-router-dom"
+import { useMatchWithQueue } from "../hooks/useMatchWithQueue"
 import {
   Upload,
   Download,
@@ -37,6 +41,12 @@ export default function VideosPage() {
     importDate: string
     format: string
   }>>([]) // Array vacío para videos reales importados
+  
+  const [showTitleDialog, setShowTitleDialog] = useState(false)
+  const [matchTitle, setMatchTitle] = useState("")
+  const [pendingFiles, setPendingFiles] = useState<FileList | null>(null)
+  const navigate = useNavigate()
+  const { createMatch, uploadVideo } = useMatchWithQueue()
 
 
   const handleDrag = (e: React.DragEvent) => {
@@ -61,46 +71,48 @@ export default function VideosPage() {
 
   const handleFiles = (files: FileList) => {
     console.log("Archivos seleccionados:", files)
+    setPendingFiles(files)
+    setMatchTitle(files[0].name.split('.').slice(0, -1).join('.') || 'Video Importado')
+    setShowTitleDialog(true)
+  }
+
+  const handleConfirmImport = async () => {
+    if (!pendingFiles || !pendingFiles[0] || !matchTitle) return
+
     setIsUploading(true)
+    setShowTitleDialog(false)
     setUploadProgress(0)
 
-    // Simular progreso de importación
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsUploading(false)
-          
-          // Agregar videos a la biblioteca después de "importar"
-          const newVideos = Array.from(files).map((file, index) => ({
-            id: Date.now() + index,
-            name: file.name,
-            size: (file.size / (1024 * 1024 * 1024)).toFixed(1) + ' GB',
-            duration: 'Calculando...', // Se podría calcular la duración real
-            status: 'ready' as const,
-            importDate: new Date().toISOString().split('T')[0],
-            format: file.name.split('.').pop()?.toUpperCase() || 'UNKNOWN'
-          }))
-          
-          setImportedVideos(prev => [...prev, ...newVideos])
-          
-          // Mostrar mensaje de éxito
-          console.log(`✅ ${newVideos.length} video(s) importado(s) exitosamente`)
-          return 100
-        }
-        return prev + 10
+    try {
+      const file = pendingFiles[0]
+      console.log(`Creando partido: ${matchTitle}`)
+      const match = await createMatch({
+        title: matchTitle,
+        date: new Date().toISOString().split('T')[0]
       })
-    }, 300)
+      
+      console.log(`Subiendo archivo: ${file.name}`)
+      await uploadVideo(match.id, file, 'Principal', matchTitle, (progress) => {
+        setUploadProgress(progress)
+      })
+
+      alert('¡El video ha sido importado y sumado a un nuevo partido exitosamente!')
+      // Redirigir a las grabaciones
+      navigate('/grabaciones')
+      
+    } catch (error) {
+      console.error('Error importando archivo:', error)
+      alert("Error al importar el video: " + (typeof error === 'object' && error && 'message' in error ? (error as any).message : String(error)))
+    } finally {
+      setIsUploading(false)
+      setPendingFiles(null)
+      setMatchTitle("")
+      setUploadProgress(0)
+    }
   }
 
   const handleConvertToMatch = (video: any) => {
-    // TODO: Implementar conversión de video a partido
-    console.log('Convirtiendo video a partido:', video)
-    // Aquí se podría:
-    // 1. Abrir un modal para configurar el partido
-    // 2. Crear un nuevo partido en la base de datos
-    // 3. Redirigir a la página de grabación con el video cargado
-    alert(`Convirtiendo "${video.name}" a partido...`)
+    navigate('/grabaciones')
   }
 
   const handleDeleteVideo = (videoId: number) => {
@@ -284,7 +296,7 @@ export default function VideosPage() {
                         </p>
                         <Button 
                           className="bg-[#1A3C34] text-white hover:bg-[#1A3C34]/80 transition-all duration-200 px-6 py-3 rounded-lg"
-                          onClick={() => document.querySelector('[value="import"]')?.click()}
+                          onClick={() => (document.querySelector('[value="import"]') as HTMLElement)?.click()}
                         >
                           <Upload className="h-5 w-5 mr-2" />
                           Importar Videos
@@ -459,6 +471,42 @@ export default function VideosPage() {
           </div>
         </main>
       </div>
+
+      <Dialog open={showTitleDialog} onOpenChange={setShowTitleDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Importar Video Externo</DialogTitle>
+            <DialogDescription>Ingresa el título para registrar este video como un nuevo partido o grabación en la plataforma.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Título del partido</label>
+              <Input
+                placeholder="Ej: Final de torneo..."
+                value={matchTitle}
+                onChange={(e) => setMatchTitle(e.target.value)}
+              />
+            </div>
+            {isUploading && uploadProgress > 0 && uploadProgress < 100 && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span>Subiendo...</span>
+                  <span>{Math.round(uploadProgress)}%</span>
+                </div>
+                <Progress value={uploadProgress} />
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={() => setShowTitleDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirmImport} disabled={!matchTitle || isUploading}>
+                Confirmar e Importar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

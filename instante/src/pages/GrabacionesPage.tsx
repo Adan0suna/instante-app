@@ -29,12 +29,14 @@ import {
   UploadCloud
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useMatch } from '../hooks/useMatch'
+import { useMatchWithQueue } from '../hooks/useMatchWithQueue'
 import type { MatchWithDetails } from '../lib/supabase/types'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog"
+import { Progress } from "../components/ui/progress"
 
 export default function GrabacionesPage() {
   const navigate = useNavigate()
-  const { loading, error, getMatchesWithDetails } = useMatch()
+  const { loading, error, getMatches, createMatch, uploadVideo } = useMatchWithQueue()
   
   // Estados para la interfaz
   const [searchQuery, setSearchQuery] = useState("")
@@ -44,20 +46,24 @@ export default function GrabacionesPage() {
   const [filterStatus, setFilterStatus] = useState<"all" | "with-video" | "without-video">("all")
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [isImporting, setIsImporting] = useState(false)
+  const [showTitleDialog, setShowTitleDialog] = useState(false)
+  const [matchTitle, setMatchTitle] = useState("")
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   // Cargar datos reales
   useEffect(() => {
     async function fetchMatches() {
       try {
-        const data = await getMatchesWithDetails()
-        setMatches(data)
+        const data = await getMatches()
+        setMatches(data as MatchWithDetails[])
       } catch (error) {
         console.error('Error al cargar las grabaciones:', error)
       }
     }
 
     fetchMatches()
-  }, [])
+  }, [getMatches])
 
   // Filtrar y ordenar grabaciones
   const filteredMatches = matches
@@ -86,18 +92,45 @@ export default function GrabacionesPage() {
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      setIsImporting(true)
-      try {
-        // Implementar importación real
-        console.log(`Importando archivo: ${file.name}`)
-        // Aquí iría la lógica para subir el archivo
-      } catch (error) {
-        console.error('Error importando archivo:', error)
-      } finally {
-        setIsImporting(false)
-        // Limpiar el input
-        event.target.value = ''
-      }
+      setPendingFile(file)
+      setMatchTitle(file.name.split('.').slice(0, -1).join('.') || 'Video Importado')
+      setShowTitleDialog(true)
+      // Limpiar el input
+      event.target.value = ''
+    }
+  }
+
+  const handleConfirmImport = async () => {
+    if (!pendingFile || !matchTitle) return
+
+    setIsImporting(true)
+    setShowTitleDialog(false)
+    setUploadProgress(0)
+
+    try {
+      console.log(`Creando partido: ${matchTitle}`)
+      const match = await createMatch({
+        title: matchTitle,
+        date: new Date().toISOString().split('T')[0]
+      })
+      
+      console.log(`Subiendo archivo: ${pendingFile.name}`)
+      await uploadVideo(match.id, pendingFile, 'Principal', matchTitle, (progress) => {
+        setUploadProgress(progress)
+      })
+
+      // Refrescar lista
+      const data = await getMatches()
+      setMatches(data as MatchWithDetails[])
+      
+    } catch (error) {
+      console.error('Error importando archivo:', error)
+      alert("Error al importar el video: " + (typeof error === 'object' && error && 'message' in error ? (error as any).message : String(error)))
+    } finally {
+      setIsImporting(false)
+      setPendingFile(null)
+      setMatchTitle("")
+      setUploadProgress(0)
     }
   }
 
@@ -423,6 +456,42 @@ export default function GrabacionesPage() {
           © 2024 Instante. Todos los derechos reservados.
         </footer>
       </div>
+
+      <Dialog open={showTitleDialog} onOpenChange={setShowTitleDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Importar Video Externo</DialogTitle>
+            <DialogDescription>Ingresa el título para el nuevo partido o grabación del que procede este video.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Título del partido</label>
+              <Input
+                placeholder="Ej: Final de torneo..."
+                value={matchTitle}
+                onChange={(e) => setMatchTitle(e.target.value)}
+              />
+            </div>
+            {uploadProgress > 0 && uploadProgress < 100 && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span>Subiendo...</span>
+                  <span>{Math.round(uploadProgress)}%</span>
+                </div>
+                <Progress value={uploadProgress} />
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={() => setShowTitleDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirmImport} disabled={!matchTitle || isImporting}>
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
