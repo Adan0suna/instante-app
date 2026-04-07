@@ -62,44 +62,126 @@ export function useClips(): UseClipsReturn {
       const createdClip = await addClip(clipData);
       console.log('✅ Clip creado en la base de datos:', createdClip);
 
-      // Ahora procesar el clip con FFmpeg
-      const response = await fetch(getBackendUrl('/recortes/process-clip'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          videoPath,
-          tempVideoId,
-          startTime,
-          endTime,
-          description,
-          matchId,
-          clipId: createdClip.id // Enviar el ID del clip creado
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error procesando el clip');
+      // Verificar si hay un video temporal disponible en el backend
+      let tempVideoAvailable = false;
+      if (tempVideoId) {
+        try {
+          const checkUrl = getBackendUrl(`/recordings/temp-video/${tempVideoId}`);
+          const checkRes = await fetch(checkUrl, { method: 'HEAD' });
+          tempVideoAvailable = checkRes.ok;
+        } catch {
+          tempVideoAvailable = false;
+        }
       }
 
-      const result = await response.json();
-      console.log('✅ Clip procesado exitosamente:', result);
+      if (tempVideoAvailable && tempVideoId) {
+        // --- Flujo A: El backend tiene el video temporal (sesión reciente) ---
+        console.log('✅ Video temporal disponible en backend, usando process-clip');
+        const response = await fetch(getBackendUrl('/recortes/process-clip'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            videoPath,
+            tempVideoId,
+            startTime,
+            endTime,
+            description,
+            matchId,
+            clipId: createdClip.id
+          }),
+        });
 
-      const newClip: Clip = {
-        clipId: result.clipId,
-        description: result.description,
-        startTime,
-        endTime,
-        duration: result.duration,
-        fileSize: result.fileSize,
-        clipPath: result.clipPath,
-        matchId: result.matchId
-      };
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error procesando el clip');
+        }
 
-      setClips(prev => [...prev, newClip]);
-      return newClip;
+        const result = await response.json();
+        console.log('✅ Clip procesado exitosamente (Flujo A):', result);
+
+        const newClip: Clip = {
+          clipId: result.clipId,
+          description: result.description,
+          startTime,
+          endTime,
+          duration: result.duration,
+          fileSize: result.fileSize,
+          clipPath: result.clipPath,
+          matchId: result.matchId
+        };
+
+        setClips(prev => [...prev, newClip]);
+        return newClip;
+
+      } else {
+        // --- Flujo B: No hay video temporal en el servidor —
+        // Descargar el video del origen (Drive u otra URL) aquí en el navegador
+        // y enviarlo directamente como archivo al endpoint process-clip-file
+        console.log('⚠️ Sin video temporal en backend. Descargando video desde origen para cortar...');
+        console.log('📥 URL de origen:', videoPath);
+
+        // Construir la URL real de descarga (Google Drive tiene URL especial para ello)
+        let downloadUrl = videoPath;
+        const driveMatch = videoPath.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveMatch) {
+          downloadUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+        }
+
+        let videoBlob: Blob;
+        try {
+          const videoResponse = await fetch(downloadUrl);
+          if (!videoResponse.ok) {
+            throw new Error(`Error descargando video: ${videoResponse.status}`);
+          }
+          videoBlob = await videoResponse.blob();
+        } catch (fetchErr: any) {
+          throw new Error(
+            `No se pudo descargar el video para cortar el clip. ` +
+            `Por favor, sube primero el video temporal usando "Subir Video Temporal". ` +
+            `(${fetchErr.message})`
+          );
+        }
+
+        console.log(`📦 Video descargado: ${(videoBlob.size / 1024 / 1024).toFixed(1)} MB`);
+
+        const ext = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
+        const videoFile = new File([videoBlob], `video_para_clip.${ext}`, { type: videoBlob.type });
+
+        const formData = new FormData();
+        formData.append('video', videoFile);
+        formData.append('startTime', startTime.toString());
+        formData.append('endTime', endTime.toString());
+        formData.append('description', description);
+        formData.append('matchId', matchId.toString());
+        formData.append('clipId', createdClip.id.toString());
+
+        const response = await fetch(getBackendUrl('/recortes/process-clip-file'), {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error procesando el clip');
+        }
+
+        const result = await response.json();
+        console.log('✅ Clip procesado exitosamente (Flujo B):', result);
+
+        const newClip: Clip = {
+          clipId: result.clipId,
+          description: result.description,
+          startTime,
+          endTime,
+          duration: result.duration,
+          fileSize: result.fileSize,
+          clipPath: result.clipPath,
+          matchId: result.matchId
+        };
+
+        setClips(prev => [...prev, newClip]);
+        return newClip;
+      }
 
     } catch (err: any) {
       console.error('❌ Error creando clip:', err);
@@ -109,6 +191,7 @@ export function useClips(): UseClipsReturn {
       setLoading(false);
     }
   };
+
 
   const getClipsForMatch = async (matchId: number): Promise<Clip[]> => {
     setLoading(true);
