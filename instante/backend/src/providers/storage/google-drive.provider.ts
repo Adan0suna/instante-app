@@ -4,6 +4,7 @@ import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as path from 'path';
 import { StorageProvider, StorageUploadOptions, StorageUploadResult } from './storage.interface';
+import { envConfig } from '../../config/env.config';
 
 @Injectable()
 export class GoogleDriveProvider implements StorageProvider {
@@ -58,7 +59,11 @@ export class GoogleDriveProvider implements StorageProvider {
         // Subir a Google Drive
         console.log('📤 Subiendo video a Google Drive...');
 
-        const oauth2Client = new google.auth.OAuth2();
+        const oauth2Client = new google.auth.OAuth2(
+            envConfig.google.clientId,
+            envConfig.google.clientSecret,
+            envConfig.google.redirectUri
+        );
         oauth2Client.setCredentials({
             access_token: credentials.access_token,
             refresh_token: credentials.refresh_token,
@@ -163,7 +168,11 @@ export class GoogleDriveProvider implements StorageProvider {
             throw new Error('Se requieren credenciales para eliminar archivos de Google Drive');
         }
 
-        const oauth2Client = new google.auth.OAuth2();
+        const oauth2Client = new google.auth.OAuth2(
+            envConfig.google.clientId,
+            envConfig.google.clientSecret,
+            envConfig.google.redirectUri
+        );
         oauth2Client.setCredentials({
             access_token: credentials.access_token,
             refresh_token: credentials.refresh_token,

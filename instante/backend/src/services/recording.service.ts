@@ -7,6 +7,7 @@ import * as ffmpeg from 'fluent-ffmpeg';
 import { google } from 'googleapis';
 import * as fs from 'fs';
 import * as path from 'path';
+import { envConfig } from '../config/env.config';
 
 // Configurar la ruta de ffmpeg
 const ffmpegPath = path.join(__dirname, '../../../../ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe');
@@ -185,7 +186,11 @@ export class RecordingService {
     });
 
     // 2. Subir a Google Drive usando los tokens del usuario
-    const oauth2Client = new google.auth.OAuth2();
+    const oauth2Client = new google.auth.OAuth2(
+      envConfig.google.clientId,
+      envConfig.google.clientSecret,
+      envConfig.google.redirectUri
+    );
     oauth2Client.setCredentials({
       access_token: userTokens.access_token,
       refresh_token: userTokens.refresh_token,

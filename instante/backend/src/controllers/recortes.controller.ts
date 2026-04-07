@@ -61,7 +61,23 @@ export class RecortesController {
 
       // Si tenemos un tempVideoId, usar el video temporal
       if (tempVideoId) {
-        actualVideoPath = path.join(process.cwd(), 'uploads', 'temp', `temp_video_${tempVideoId}.mp4`);
+        const tempDir = path.join(process.cwd(), 'uploads', 'temp');
+        if (fs.existsSync(tempDir)) {
+          const files = fs.readdirSync(tempDir);
+          const videoFile = files.find(
+            (file) =>
+              file.startsWith(tempVideoId) ||
+              file === `temp_video_${tempVideoId}.mp4` ||
+              file.startsWith(`temp_video_${tempVideoId}`)
+          );
+          if (videoFile) {
+            actualVideoPath = path.join(tempDir, videoFile);
+          } else {
+            actualVideoPath = path.join(tempDir, `temp_video_${tempVideoId}.mp4`);
+          }
+        } else {
+          actualVideoPath = path.join(process.cwd(), 'uploads', 'temp', `temp_video_${tempVideoId}.mp4`);
+        }
       }
 
       // Verificar que el archivo de video existe
