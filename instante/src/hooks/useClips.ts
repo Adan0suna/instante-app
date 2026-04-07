@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { addClip } from '../lib/supabase/matches';
+import { addClip, updateClip } from '../lib/supabase/matches';
 import { getBackendUrl } from '../lib/config';
 
 interface Clip {
@@ -99,6 +99,12 @@ export function useClips(): UseClipsReturn {
         const result = await response.json();
         console.log('✅ Clip procesado exitosamente (Flujo A):', result);
 
+        // Actualizar la URL del clip directamente en la base de datos desde el cliente
+        if (result.clipUrl) {
+          await updateClip(createdClip.id, { clip_url: result.clipUrl });
+          console.log('🔗 URL del clip actualizada en la base de datos');
+        }
+
         const newClip: Clip = {
           clipId: result.clipId,
           description: result.description,
@@ -167,6 +173,12 @@ export function useClips(): UseClipsReturn {
 
         const result = await response.json();
         console.log('✅ Clip procesado exitosamente (Flujo B):', result);
+
+        // Actualizar la URL del clip directamente en la base de datos desde el cliente
+        if (result.clipUrl) {
+          await updateClip(createdClip.id, { clip_url: result.clipUrl });
+          console.log('🔗 URL del clip actualizada en la base de datos');
+        }
 
         const newClip: Clip = {
           clipId: result.clipId,

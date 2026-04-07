@@ -222,6 +222,18 @@ export async function addClip(clip: Omit<Clip, 'id'>) {
   }
 }
 
+export async function updateClip(id: number, updates: Partial<Clip>) {
+  const { data, error } = await supabase
+    .from('clips')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as Clip
+}
+
 export async function assignClipCategory(clipId: number, categoryId: number) {
   const { data, error } = await supabase
     .from('clip_category_assignments')
